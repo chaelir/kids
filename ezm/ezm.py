@@ -44,8 +44,8 @@ class Game:
             "maze_width": 9,
             "maze_height": 9,
             "zombie_delay": 5,
-            "zombie_speed_fast": True,
-            "zombie_flooding_enabled": True
+            "zombie_speed_fast": True,  # Default to True
+            "zombie_flooding_enabled": True  # Default to True
         }
         self.player_name = ""
         self.input_boxes = {
@@ -64,6 +64,9 @@ class Game:
         self.cursor = pygame.Surface((15, 15), pygame.SRCALPHA)
         pygame.draw.circle(self.cursor, (255, 0, 0, 128), (7, 7), 7)
         pygame.mouse.set_visible(False)
+
+        self.last_move_time = 0
+        self.move_delay = 0.1  # 200 milliseconds delay between moves
 
     # Game initialization and state management
     def start_game(self):
@@ -270,12 +273,6 @@ class Game:
                                for row, col in self.player_path], 
                               width=3)
 
-        # Draw valid moves (all reachable squares)
-        for row, col in self.valid_moves:
-            x = self.offset_x + col * self.cell_size
-            y = self.offset_y + row * self.cell_size
-            pygame.draw.rect(self.screen, ORANGE, (x, y, self.cell_size, self.cell_size), 3)
-
         # Draw tentative path
         if len(self.tentative_path) > 1:
             pygame.draw.lines(self.screen, YELLOW, False, 
@@ -371,11 +368,7 @@ class Game:
     def handle_maze_click(self, pos):
         cell = self.get_cell_from_pos(pos)
         if cell and cell in self.valid_moves:
-            path = self.get_path_to_cell(cell)
-            self.player_position = cell
-            self.player_path.extend(path[1:])  # Exclude the starting position
-            self.update_valid_moves()
-        self.tentative_path = []
+            self.tentative_path = self.get_path_to_cell(cell)
 
     def handle_maze_hover(self, pos):
         cell = self.get_cell_from_pos(pos)
@@ -434,26 +427,16 @@ class Game:
     def get_path_to_cell(self, target_cell):
         path = [self.player_position]
         current = self.player_position
-        dx = target_cell[1] - current[1]
-        dy = target_cell[0] - current[0]
-        
-        # Move horizontally first, then vertically
-        if dx != 0:
-            step = 1 if dx > 0 else -1
-            for x in range(current[1], target_cell[1] + step, step):
-                next_cell = (current[0], x)
-                if self.maze.is_wall(*next_cell):
-                    break
-                path.append(next_cell)
-        
-        if dy != 0:
-            step = 1 if dy > 0 else -1
-            for y in range(path[-1][0], target_cell[0] + step, step):
-                next_cell = (y, path[-1][1])
-                if self.maze.is_wall(*next_cell):
-                    break
-                path.append(next_cell)
-        
+        while current != target_cell:
+            if target_cell[1] > current[1]:
+                current = (current[0], current[1] + 1)
+            elif target_cell[1] < current[1]:
+                current = (current[0], current[1] - 1)
+            elif target_cell[0] > current[0]:
+                current = (current[0] + 1, current[1])
+            elif target_cell[0] < current[0]:
+                current = (current[0] - 1, current[1])
+            path.append(current)
         return path
 
     def is_turn(self, path):
@@ -553,10 +536,19 @@ class Game:
                         self.handle_welcome_keydown(event)
                     elif self.state == "game_over":
                         self.handle_game_over_keydown(event)
+                    elif self.state == "playing":
+                        self.handle_keystroke(event.key)
                 elif event.type == self.ZOMBIE_UPDATE_EVENT and self.state == "playing":
                     if self.settings["zombie_flooding_enabled"]:
                         self.update_zombie_flood()
                         self.update_valid_moves()
+
+            # Handle held keys for continuous movement
+            keys = pygame.key.get_pressed()
+            if self.state == "playing":
+                for key in [pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT]:
+                    if keys[key]:
+                        self.handle_keystroke(key)
 
             if self.state == "playing":
                 if self.player_position in self.zombie_flood:
@@ -569,6 +561,45 @@ class Game:
             self.draw()
             clock.tick(60)
         return False
+
+    def handle_keystroke(self, key):
+        if self.state != "playing":
+            return
+
+        current_time = time.time()
+        if current_time - self.last_move_time < self.move_delay:
+            return  # Ignore keystroke if not enough time has passed
+
+        move = {
+            pygame.K_UP: (-1, 0),
+            pygame.K_DOWN: (1, 0),
+            pygame.K_LEFT: (0, -1),
+            pygame.K_RIGHT: (0, 1)
+        }.get(key)
+
+        if move:
+            current_row, current_col = self.player_position
+            new_row = current_row + move[0]
+            new_col = current_col + move[1]
+            new_pos = (new_row, new_col)
+            
+            # Check if the new position is valid
+            if new_pos in self.valid_moves:
+                # Check if the new position is in the tentative path
+                if not self.tentative_path or new_pos in self.tentative_path:
+                    self.player_position = new_pos
+                    self.player_path.append(new_pos)
+                    
+                    # Update tentative path
+                    if self.tentative_path:
+                        # Remove all cells up to and including the new position
+                        while self.tentative_path and self.tentative_path[0] != new_pos:
+                            self.tentative_path.pop(0)
+                        if self.tentative_path:
+                            self.tentative_path.pop(0)  # Remove the new position itself
+                    
+                    self.update_valid_moves()
+                    self.last_move_time = current_time  # Update the last move time
 
 def main():
     pygame.init()
