@@ -220,12 +220,13 @@ class Game:
         self.screen.blit(title_surface, title_rect)
 
         legend_items = [
-            ("Player", MAGENTA),
+            ("Player", ORANGE),
+            ("Trail", MAGENTA),
             ("Walls", BLACK),
             ("Zombies", RED),
             ("IN", GREEN),
-            ("OUT", BLUE),
-            ("Hint", ORANGE)
+            ("OUT", BLUE)
+            #("Hint", ORANGE)
         ]
         for i, (text, color) in enumerate(legend_items):
             pygame.draw.rect(self.screen, color, (legend_x + 10, legend_y + 60 + i*30, 20, 20))
@@ -284,7 +285,7 @@ class Game:
         # Draw current player position
         player_x = self.offset_x + self.player_position[1] * self.cell_size + self.cell_size // 2
         player_y = self.offset_y + self.player_position[0] * self.cell_size + self.cell_size // 2
-        pygame.draw.circle(self.screen, MAGENTA, (player_x, player_y), self.cell_size // 3)
+        pygame.draw.circle(self.screen, ORANGE, (player_x, player_y), self.cell_size // 3)
 
     def draw_score_board(self):
         # Dark background
