@@ -6,8 +6,8 @@ from maze import Maze, backtracking
 # Constants
 SCREEN_WIDTH, SCREEN_HEIGHT = 1024, 768
 WHITE, BLACK, RED, GREEN, BLUE, MAGENTA, YELLOW, LIGHT_GRAY, ORANGE = (255, 255, 255), (0, 0, 0), (255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 0, 255), (255, 255, 0), (200, 200, 200), (255, 165, 0)
-MIN_MAZE_HEIGHT, MAX_MAZE_HEIGHT = 9, 29
-MIN_MAZE_WIDTH, MAX_MAZE_WIDTH = 9, 39
+MIN_MAZE_HEIGHT, MAX_MAZE_HEIGHT = 9, 99
+MIN_MAZE_WIDTH, MAX_MAZE_WIDTH = 9, 99
 MIN_ZOMBIE_DELAY, MAX_ZOMBIE_DELAY = 5, 10
 
 class Game:
@@ -184,7 +184,7 @@ class Game:
                 range_surface = self.font.render(range_text, True, LIGHT_GRAY)
                 self.screen.blit(range_surface, (input_box.right + 25, input_box.y + 5))
             elif setting != "player_name":
-                range_text = "(9-39)" if setting == "maze_width" else "(9-29)"
+                range_text = "(9-99)" if setting == "maze_width" else "(9-99)"
                 range_surface = self.font.render(range_text, True, LIGHT_GRAY)
                 self.screen.blit(range_surface, (input_box.right + 10, input_box.y + 5))
             
