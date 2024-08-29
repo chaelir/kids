@@ -89,29 +89,82 @@ To effectively learn and use Cursor and its Composer Mode, students should have 
    - Basic knowledge of using command-line interfaces (CLI)
    - Familiarity with running simple commands
 
-5. Version Control Concepts:
+5. Version Control and Git:
    - Basic understanding of version control systems (e.g., Git)
    - Familiarity with the concept of code repositories
-
-6. Git and GitHub:
    - Basic knowledge of Git commands (e.g., clone, commit, push, pull)
    - Understanding of GitHub's interface and features (e.g., repositories, pull requests)
-   - Tutorial and code examples available at https://github.com/chaelir/kids
 
-7. Web Browsing:
+6. Web Browsing:
    - Ability to navigate websites and use web-based applications
    - Understanding of how to download and install software
 
-8. English Language:
+7. English Language:
    - Basic proficiency in reading and writing English, as Cursor's AI primarily communicates in English
 
-9. Logical Thinking:
+8. Logical Thinking:
    - Basic problem-solving skills
    - Ability to break down tasks into smaller steps
 
-10. Curiosity and Willingness to Learn:
-    - Open-mindedness towards AI-assisted coding
-    - Enthusiasm for exploring new technologies
+9. Curiosity and Willingness to Learn:
+   - Open-mindedness towards AI-assisted coding
+   - Enthusiasm for exploring new technologies
+
+Note: There is no specific age limitation for learning Cursor and Composer. However, users should have the cognitive ability to understand and apply the prerequisites listed above. Generally, this tool might be more suitable for teenagers and adults, but precocious younger learners with a strong interest in programming could also benefit from it under proper guidance.
+
+
+##  issues of Cursor Composer Known to me 
+
+1. apply doest not occur after the click (likely happening if same error occurs twice even after accept all)
+
+> Q: is last changes applied?
+>
+> Yes, the last changes have been applied. Here's a summary of the key modifications:
+>
+> - In ezm/maze.py:
+>   - The `generate` method was updated to use the correct function name for the recursive division algorithm.
+
+2. forget user instructed external files (forget some functions are already defined in external file and try to rewrite) 
+
+> Q: Those functions are already in @maze.py
+
+> A: I apologize for the confusion. You're right that the maze generation functions are already implemented in maze.py. Let's focus on resolving the issue with the recursive division algorithm not being found. The problem seems to be in how the algorithm name is being handled between ezm.py and maze.py.
+
+3. need to drag the window by middle bar
+
+> Q: keep contents in mazeai readonly
+
+> A: I apologize for the confusion. You're right that we should keep the contents of the mazeai directory readonly. Let's focus on resolving the issue without modifying the existing JavaScript files.
+> The problem seems to be that the recursive division algorithm is causing a stack overflow error. Since we can't modify the JavaScript file, we'll need to handle this in the Python code. Here's what we can do:
+> In the maze.py file, let's add a fallback  
+
+
+4. Cursor Composer Shortcuts and Keymapping Issues
+
+I found Cursor Composer's shortcuts and keymapping can sometimes be unintuitive or unresponsive.
+
+5. Not working well with Vim mode
+
+
+## Other Known problems of the tools
+
+1. Memory limit errors: Composer may fail with a "PHP Fatal error: Allowed memory size exhausted" message. This can be resolved by increasing the PHP memory limit [1][2].
+
+2. Package not found errors: This can occur due to typos in composer.json, incorrect minimum-stability settings, or network/firewall issues [2].
+
+3. Operation timeout errors: These are often related to IPv6 configuration issues. Workarounds include forcing IPv4 resolution or disabling IPv6 [2].
+
+4. SSH ControlMaster hanging: Composer may hang indefinitely when using SSH ControlMaster. A workaround is to open an SSH connection to the Git host before running Composer [2].
+
+5. Zip archive unpacking issues: On some operating systems, Composer may have trouble unpacking zip archives correctly, especially with permissions and symlinks [2].
+
+6. Pool optimizer issues: In rare cases, the pool optimizer may cause unexpected results in dependency resolution. This can be diagnosed by disabling the optimizer [2].
+
+7. Application execution issues: Some users have reported that applications may not execute properly if the Composer window is too full. However, this claim requires further verification as it's not mentioned in the official documentation.
+
+[1]: https://getcomposer.org/doc/articles/troubleshooting.md
+[2]: https://github.com/composer/composer/blob/main/doc/articles/troubleshooting.md
+
 
 
 

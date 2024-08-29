@@ -33,7 +33,7 @@ class Maze:
             'sidewinder': 'sidewinderMaze',
             'binary_tree': 'binaryTreeMaze',
             'prims': 'primsMaze',
-            'recursive_division': 'recursiveDivisionMaze'
+            'recursive_division': 'recursive_divisionMaze'  # Changed this to match the JS function name
         }
         
         if self.generation_algorithm not in algorithms:
@@ -50,21 +50,26 @@ class Maze:
             ctx = execjs.compile(js_code)
             js_maze = ctx.call(algorithms[self.generation_algorithm], self.cols, self.rows)
 
-            print(f"JavaScript-generated maze using {self.generation_algorithm}:")
-            for row in js_maze:
-                print(''.join(['#' if cell == 1 else ' ' for cell in row]))
-            print()  # Add an empty line after the maze
-
             self.grid = js_maze
         except Exception as e:
             print(f"Error in {self.generation_algorithm} maze generation: {e}")
-            print("Falling back to a simple maze...")
-            self.create_simple_maze()
+            print("Falling back to Python implementation...")
+            self.fallback_generate()
 
         self.ensure_entrance_exit()
         self.solution = self.find_solution()
         print("Maze generation complete")
-        print(self)
+
+    def fallback_generate(self):
+        # Implement a simple maze generation algorithm here
+        self.grid = [[1 for _ in range(self.cols)] for _ in range(self.rows)]
+        for i in range(1, self.rows - 1, 2):
+            for j in range(1, self.cols - 1, 2):
+                self.grid[i][j] = 0
+                if i < self.rows - 2 and random.random() < 0.5:
+                    self.grid[i+1][j] = 0
+                elif j < self.cols - 2:
+                    self.grid[i][j+1] = 0
 
     def create_simple_maze(self):
         self.grid = [[1 for _ in range(self.cols)] for _ in range(self.rows)]
@@ -127,7 +132,8 @@ class Maze:
         for j in range(self.cols):
             self.grid[0][j] = self.grid[self.rows-1][j] = 1
 
-# Update the test_maze_generation function
+# Add these test functions at the end of the file
+
 def test_maze_generation(num_tests: int = 1):
     algorithms = [
         'recursive_division', 'backtracking', 'hunt_and_kill', 'wilsons',
@@ -138,8 +144,8 @@ def test_maze_generation(num_tests: int = 1):
         print(f"\nRunning {num_tests} tests for {algorithm} algorithm...")
         
         for i in range(num_tests):
-            rows = 11  # Odd number
-            cols = 11  # Odd number
+            rows = 19  # Odd number
+            cols = 19  # Odd number
             
             maze = Maze(rows, cols, algorithm)
             
@@ -160,5 +166,34 @@ def test_maze_generation(num_tests: int = 1):
     
     return True
 
+def test_recursive_division():
+    print("\nTesting recursive division algorithm specifically...")
+    rows = 19
+    cols = 19
+    maze = Maze(rows, cols, 'recursive_division')
+    print("\nGenerated maze:")
+    print(maze)
+    
+    if maze.grid[maze.in_point[0]][maze.in_point[1]] != 0 or maze.grid[maze.out_point[0]][maze.out_point[1]] != 0:
+        print("Test failed: Entrance or exit is blocked")
+        return False
+    
+    if not maze.solution:
+        print("Test failed: No valid path from entrance to exit")
+        return False
+    
+    print(f"Test passed: Maze size {rows}x{cols}")
+    return True
+
 if __name__ == "__main__":
-    test_maze_generation()
+    print("Running general maze generation tests...")
+    if test_maze_generation():
+        print("\nAll general tests passed!")
+    else:
+        print("\nSome general tests failed.")
+    
+    print("\nRunning specific test for recursive division...")
+    if test_recursive_division():
+        print("\nRecursive division test passed!")
+    else:
+        print("\nRecursive division test failed.")

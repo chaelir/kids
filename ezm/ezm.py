@@ -7,10 +7,14 @@ from maze import Maze
 import random
 import importlib.util
 import execjs
+from dotenv import load_dotenv
 
-# Instead of loading from .env file, define a function to get environment variables with defaults
+# Load environment variables from .env file
+load_dotenv('emz.env')
+
+# Update the getenv function to use os.getenv directly
 def getenv(key, default):
-    return os.environ.get(key, default)
+    return os.getenv(key, default)
 
 # Change the working directory to the script's directory
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -95,7 +99,7 @@ class Game:
             "zombie_delay": float(getenv('DEFAULT_ZOMBIE_DELAY', '5')),
             "zombie_speed_fast": getenv('DEFAULT_ZOMBIE_SPEED_FAST', 'True').lower() == 'true',
             "zombie_spawning_enabled": getenv('DEFAULT_ZOMBIE_SPAWNING_ENABLED', 'True').lower() == 'true',
-            "generation_algorithm": getenv('DEFAULT_GENERATION_ALGORITHM', 'backtracking')
+            "generation_algorithm": getenv('DEFAULT_GENERATION_ALGORITHM', 'recursive_division')
         }
         self.player_name = getenv('DEFAULT_PLAYER_NAME', 'CX')
         self.input_boxes = {
@@ -151,16 +155,41 @@ class Game:
         self.show_solution = False
         self.solution_color = (255, 215, 0)  # Gold color for solution
 
+        print(f"Initial generation algorithm: {self.settings['generation_algorithm']}")
+
+        # Load asset images for the welcome screen
+        self.sword_welcome_image = pygame.image.load(os.path.join("assets", "sword.jpg"))
+        self.player_welcome_image = pygame.image.load(os.path.join("assets", "nobody.jpg"))
+        self.player_with_sword_welcome_image = pygame.image.load(os.path.join("assets", "sworded.jpg"))
+        self.zombie_welcome_image = pygame.image.load(os.path.join("assets", "zombie.jpg"))
+
+        # Scale the images to a suitable size for the welcome screen
+        welcome_image_size = (100, 100)
+        self.sword_welcome_image = pygame.transform.scale(self.sword_welcome_image, welcome_image_size)
+        self.player_welcome_image = pygame.transform.scale(self.player_welcome_image, welcome_image_size)
+        self.player_with_sword_welcome_image = pygame.transform.scale(self.player_with_sword_welcome_image, welcome_image_size)
+        self.zombie_welcome_image = pygame.transform.scale(self.zombie_welcome_image, welcome_image_size)
+
     def load_maze_algorithms(self):
         self.maze_algorithms = {}
-        algorithm_dir = 'mazeai'
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        algorithm_dir = os.path.join(current_dir, "mazeai")
+        print(f"Searching for algorithms in directory: {algorithm_dir}")
         for filename in os.listdir(algorithm_dir):
             if filename.endswith('.js'):
-                algorithm_name = filename[:-3]
-                with open(os.path.join(algorithm_dir, filename), 'r') as file:
+                algorithm_name = filename[:-3].replace('-', '_')  # Remove .js and replace - with _
+                file_path = os.path.join(algorithm_dir, filename)
+                print(f"Found algorithm file: {file_path}")
+                with open(file_path, 'r') as file:
                     js_code = file.read()
-                ctx = execjs.compile(js_code)
-                self.maze_algorithms[algorithm_name] = ctx
+                try:
+                    ctx = execjs.compile(js_code)
+                    self.maze_algorithms[algorithm_name] = ctx
+                    print(f"Successfully loaded algorithm: {algorithm_name}")
+                except Exception as e:
+                    print(f"Error loading algorithm {algorithm_name}: {str(e)}")
+                    print(f"JavaScript code causing the error:\n{js_code}")
+        print(f"Loaded algorithms: {list(self.maze_algorithms.keys())}")
 
     def change_algorithm(self, algorithm_name):
         if algorithm_name in self.maze_algorithms:
@@ -173,28 +202,28 @@ class Game:
         if not self.validate_settings():
             return
         
+        print(f"Available algorithms: {list(self.maze_algorithms.keys())}")
         max_attempts = 5
-        for _ in range(max_attempts):
+        for attempt in range(max_attempts):
             try:
-                js_ctx = self.maze_algorithms[self.settings["generation_algorithm"]]
-                js_maze = js_ctx.call(f"{self.settings['generation_algorithm']}Maze", self.settings["maze_width"], self.settings["maze_height"])
-                self.maze = Maze(self.settings["maze_height"], self.settings["maze_width"])
-                self.maze.grid = js_maze
+                algorithm = self.settings["generation_algorithm"]
+                print(f"Attempting to use algorithm: {algorithm}")
+                self.maze = Maze(self.settings["maze_height"], self.settings["maze_width"], algorithm)
                 if self.maze.solution:
+                    print(f"Maze generated successfully on attempt {attempt + 1}")
                     break
+                else:
+                    raise ValueError("Generated maze has no solution")
             except Exception as e:
-                print(f"Error generating maze: {e}")
+                print(f"Error generating maze (attempt {attempt + 1}): {str(e)}")
         else:
-            print(f"Failed to generate a valid maze after {max_attempts} attempts. Please try again.")
-            self.state = "welcome"
-            self.maze = None
-            self.zombie_spawn_start_time = None
-            return
+            print(f"Failed to generate a valid maze after {max_attempts} attempts. Using fallback method.")
+            self.maze = Maze(self.settings["maze_height"], self.settings["maze_width"], "fallback")
 
         # Only proceed if maze generation was successful
         if self.maze:
             self.player_position = self.maze.in_point
-            print(f"Initial player position: {self.player_position}")  # Debug print
+            print(f"Initial player position: {self.player_position}")
             self.zombies = pygame.sprite.Group()
             self.player_path = []
             self.tentative_path = []
@@ -203,8 +232,9 @@ class Game:
             self.state = "playing"
             self.zombie_spawn_start_time = time.time() + self.settings["zombie_delay"]
             self.zombies_vanquished = 0
-            self.calculate_maze_dimensions()  # Add this line
+            self.calculate_maze_dimensions()
             self.spawn_sword()
+            self.sword_collected = False  # Reset sword collection status
             print(f"Sword spawned at {self.sword_position}")
         else:
             print("Maze generation failed. Returning to welcome screen.")
@@ -213,27 +243,26 @@ class Game:
 
     def spawn_sword(self):
         empty_cells = [(r, c) for r in range(self.maze.rows) for c in range(self.maze.cols) 
-                       if not self.maze.is_wall(r, c) and (r, c) != self.player_position
+                       if self.maze.grid[r][c] == 0 and (r, c) != self.player_position
                        and (r, c) != self.maze.out_point]
-        self.sword_position = random.choice(empty_cells) if empty_cells else None
-        print(f"Sword position: {self.sword_position}")
+        if empty_cells:
+            self.sword_position = random.choice(empty_cells)
+            print(f"Sword spawned at {self.sword_position}")
+        else:
+            print("No empty cells available for sword spawning")
 
     def spawn_zombies(self):
         if not self.settings["zombie_spawning_enabled"] or self.zombie_spawn_start_time is None or time.time() < self.zombie_spawn_start_time:
-            print("Zombie spawning conditions not met")
             return
         
         max_zombies = int(getenv('MAX_ZOMBIES', '2'))
         current_zombies = len(self.zombies)
         total_zombies = current_zombies + self.zombies_vanquished
 
-        print(f"Current zombies: {current_zombies}, Total spawned: {total_zombies}, Max allowed: {max_zombies}")
-
         if total_zombies < max_zombies:
             new_pos = self.get_random_empty_position()
             if new_pos:
-                new_zombie = Zombie((new_pos[1] * self.cell_size + self.cell_size // 2,
-                                     new_pos[0] * self.cell_size + self.cell_size // 2))
+                new_zombie = Zombie((new_pos[1], new_pos[0]))
                 self.zombies.add(new_zombie)
                 print(f"New zombie spawned at {new_pos}")
             else:
@@ -278,7 +307,7 @@ class Game:
     def draw_welcome_screen(self):
         self.screen.fill(BLACK)
 
-        title = self.title_font.render("Welcome to EscapeZombieMazia!", True, RED)  # Changed to RED
+        title = self.title_font.render("Welcome to EscapeZombieMazia!", True, RED)
         title_rect = title.get_rect(center=(self.screen_width // 2, 50))
         self.screen.blit(title, title_rect)
 
@@ -296,16 +325,35 @@ class Game:
 
         rules = [
             "1. Navigate through the maze to reach the exit.",
-            "2. Avoid zombies that spawn randomly unless you have the sword.",
-            "3. Use arrow keys or click to move.",
+            "2. Avoid zombies that spawn randomly",
+            "   unless you have the sword.",
+            "3. Use arrow keys to move.",
             "4. Game over if caught by zombies.",
-            "5. Score based on maze size, zombie speed,",
-            "   and time taken (if flooding enabled)."
+            "5. Score based on maze size and zombie speed.",
         ]
 
+        algorithms = [
+            "Recursive Division", "Backtracking", "Hunt and Kill",
+            "Wilson's", "Eller's", "Kruskal's", "Aldous-Broder",
+            "Sidewinder", "Binary Tree", "Prim's"
+        ]
+
+        # Split rules into two columns
+        col_width = rules_pane.width // 2 - 20
         for i, rule in enumerate(rules):
             rule_surface = self.font.render(rule, True, WHITE)
-            self.screen.blit(rule_surface, (rules_pane.x + 10, rules_pane.y + 50 + i * 30))
+            x = rules_pane.x + 10 + (i // 3) * (col_width + 20)
+            y = rules_pane.y + 50 + (i % 3) * 30
+            self.screen.blit(rule_surface, (x, y))
+
+        algo_title = self.font.render("6. Choose a maze generation algorithm:", True, WHITE)
+        self.screen.blit(algo_title, (rules_pane.x + 10, rules_pane.y + 180))
+
+        for i, algo in enumerate(algorithms):
+            algo_surface = self.font.render(f"   - {algo}", True, WHITE)
+            x = rules_pane.x + 10 + (i // 5) * (col_width + 20)
+            y = rules_pane.y + 210 + (i % 5) * 30
+            self.screen.blit(algo_surface, (x, y))
 
         # Game Controls
         controls_title = self.title_font.render("Game Controls", True, WHITE)
@@ -318,7 +366,7 @@ class Game:
             self.screen.blit(setting_surface, (controls_pane.x + 10, y))
             
             input_box = self.input_boxes[setting]
-            input_box.topleft = (controls_pane.x + 180, y - 5)  # Adjusted y position
+            input_box.topleft = (controls_pane.x + 180, y - 5)
             pygame.draw.rect(self.screen, WHITE if self.active_input == setting else LIGHT_GRAY, input_box, 2)
             value = self.player_name if setting == "player_name" else str(self.settings[setting])
             value_surface = self.font.render(value, True, WHITE)
@@ -337,42 +385,39 @@ class Game:
             
             y += 50
 
-        speed_text = f"Zombie Speed: {'FAST' if self.settings['zombie_speed_fast'] else 'NORMAL'}"
-        speed_surface = self.font.render(speed_text, True, WHITE)
-        self.screen.blit(speed_surface, (controls_pane.x + 10, y))
-        speed_toggle = self.font.render("Press S to toggle", True, LIGHT_GRAY)
-        self.screen.blit(speed_toggle, (controls_pane.x + 10, y + 30))
+        toggle_settings = [
+            ("Zombie Speed", "zombie_speed_fast", "S"),
+            ("Zombie Spawning", "zombie_spawning_enabled", "F"),
+            ("Show Trail", "show_trail", "T")
+        ]
 
-        y += 70
-        flood_text = f"Zombie Spawning: {'ON' if self.settings['zombie_spawning_enabled'] else 'OFF'}"
-        flood_surface = self.font.render(flood_text, True, WHITE)
-        self.screen.blit(flood_surface, (controls_pane.x + 10, y))
-        flood_toggle = self.font.render("Press F to toggle", True, LIGHT_GRAY)
-        self.screen.blit(flood_toggle, (controls_pane.x + 10, y + 30))
+        for i, (text, setting, key) in enumerate(toggle_settings):
+            toggle_text = f"{text}: {'ON' if self.settings.get(setting, False) else 'OFF'}"
+            toggle_surface = self.font.render(toggle_text, True, WHITE)
+            self.screen.blit(toggle_surface, (controls_pane.x + 10, y))
+            toggle_key = self.font.render(f"Press {key} to toggle", True, LIGHT_GRAY)
+            self.screen.blit(toggle_key, (controls_pane.x + 10, y + 30))
+            y += 70
 
-        y += 70
-        algorithm_text = f"Maze Algorithm: {self.current_algorithm}"
-        algorithm_surface = self.font.render(algorithm_text, True, WHITE)
-        self.screen.blit(algorithm_surface, (controls_pane.x + 10, y))
-        algorithm_toggle = self.font.render("Press A to change", True, LIGHT_GRAY)
-        self.screen.blit(algorithm_toggle, (controls_pane.x + 10, y + 30))
-
-        start_text = self.font.render("Press Enter to start with default options", True, WHITE)
+        start_text = self.font.render("Press Enter to start with current options", True, WHITE)
         start_text_rect = start_text.get_rect(center=(self.screen_width // 2, self.screen_height - 30))
         self.screen.blit(start_text, start_text_rect)
 
-        # Add algorithm selection
-        algorithms = [
-            'recursive_division', 'backtracking', 'hunt_and_kill', 'wilsons',
-            'ellers', 'kruskals', 'aldous_broder', 'sidewinder', 'binary_tree', 'prims'
+        # Display asset images
+        image_y = rules_pane.bottom - 100
+        image_spacing = 120
+        images = [
+            (self.player_welcome_image, "Player"),
+            (self.sword_welcome_image, "Sword"),
+            (self.player_with_sword_welcome_image, "Player with Sword"),
+            (self.zombie_welcome_image, "Zombie")
         ]
-        algorithm_y = 400
-        for i, algorithm in enumerate(algorithms):
-            text = self.font.render(algorithm, True, WHITE)
-            rect = text.get_rect(left=50, top=algorithm_y + i * 30)
-            self.screen.blit(text, rect)
-            if algorithm == self.settings["generation_algorithm"]:
-                pygame.draw.rect(self.screen, RED, rect, 2)
+        for i, (image, label) in enumerate(images):
+            x = rules_pane.x + (i % 2) * (image_spacing + welcome_image_size[0])
+            self.screen.blit(image, (x, image_y))
+            label_surface = self.font.render(label, True, WHITE)
+            label_rect = label_surface.get_rect(center=(x + welcome_image_size[0] // 2, image_y + welcome_image_size[1] + 20))
+            self.screen.blit(label_surface, label_rect)
 
     def draw_legend(self):
         legend_x = self.screen_width - self.legend_width
@@ -561,6 +606,9 @@ class Game:
         elif event.key == pygame.K_f:
             self.settings["zombie_spawning_enabled"] = not self.settings["zombie_spawning_enabled"]
             self.draw_welcome_screen()  # Redraw the screen to show the updated setting
+        elif event.key == pygame.K_t:
+            self.show_trail = not self.show_trail
+            self.draw_welcome_screen()  # Redraw the screen to show the updated setting
         elif event.key == pygame.K_a:
             algorithms = list(self.maze_algorithms.keys())
             current_index = algorithms.index(self.current_algorithm)
@@ -668,7 +716,7 @@ class Game:
 
     def get_random_empty_position(self):
         empty_cells = [(r, c) for r in range(self.maze.rows) for c in range(self.maze.cols)
-                       if not self.maze.is_wall(r, c) and (r, c) != self.player_position
+                       if self.maze.grid[r][c] == 0 and (r, c) != self.player_position
                        and (r, c) != self.maze.out_point and (r, c) != self.sword_position]
         return random.choice(empty_cells) if empty_cells else None
 
@@ -717,6 +765,21 @@ class Game:
         except IOError:
             print("Error saving leaderboard.")
 
+    def calculate_maze_dimensions(self):
+        available_width = self.maze_area_width
+        available_height = self.maze_area_height
+
+        cell_width = available_width // self.maze.cols
+        cell_height = available_height // self.maze.rows
+
+        self.cell_size = min(cell_width, cell_height)
+
+        total_maze_width = self.cell_size * self.maze.cols
+        total_maze_height = self.cell_size * self.maze.rows
+
+        self.offset_x = self.margin + (available_width - total_maze_width) // 2
+        self.offset_y = self.margin + (available_height - total_maze_height) // 2
+
     # Main game loop
     def handle_events(self):
         for event in pygame.event.get():
@@ -726,7 +789,6 @@ class Game:
             elif event.type == pygame.VIDEORESIZE:
                 self.handle_resize(event.size)
             elif event.type == pygame.KEYDOWN:
-                print(f"Key down event: {event.key}")  # Debug print
                 if event.key == pygame.K_ESCAPE:
                     if self.state == "playing" or self.state == "game_over":
                         self.state = "welcome"
@@ -746,7 +808,6 @@ class Game:
         if self.state == "playing":
             for key in [pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT]:
                 if keys[key]:
-                    print(f"Held key: {key}")  # Debug print
                     self.handle_keystroke(key)
 
         # Only check game state if maze exists
@@ -757,19 +818,16 @@ class Game:
                 self.update_leaderboard(score)
             elif self.player_position == self.sword_position:
                 self.sword_collected = True
-                print("Sword collected! You can now defeat zombies!")
 
         self.draw()
         self.clock.tick(30)
 
     def handle_keystroke(self, key):
         if self.state != "playing" or not self.maze:
-            print("Not in playing state or maze doesn't exist")
             return
 
         current_time = time.time()
         if current_time - self.last_move_time < self.move_delay:
-            print("Move delay not elapsed")
             return  # Ignore keystroke if not enough time has passed
 
         move = {
@@ -779,14 +837,10 @@ class Game:
             pygame.K_RIGHT: (0, 1)
         }.get(key)
 
-        print(f"Key pressed: {key}, Move: {move}")  # Debug print
-
         if move:
             new_row = self.player_position[0] + move[0]
             new_col = self.player_position[1] + move[1]
             new_pos = (new_row, new_col)
-            
-            print(f"Attempting to move to: {new_pos}")  # Debug print
             
             if not self.maze.is_wall(new_row, new_col):
                 self.player_position = new_pos
@@ -794,19 +848,12 @@ class Game:
                 self.update_valid_moves()
                 self.last_move_time = current_time
 
-                print(f"Player moved to {self.player_position}")  # Debug print
-
                 # Check if the player has collected the sword
                 if self.player_position == self.sword_position and not self.sword_collected:
                     self.sword_collected = True
-                    print("Sword collected! You can now defeat zombies!")
 
                 # Check for zombie collisions
                 self.check_zombie_collisions()
-            else:
-                print(f"Cannot move to {new_pos}, it's a wall")  # Debug print
-        else:
-            print(f"Invalid key pressed: {key}")  # Debug print
 
         self.draw()  # Redraw the game after each move
 
@@ -816,7 +863,6 @@ class Game:
                 if self.sword_collected:
                     self.zombies.remove(zombie)
                     self.zombies_vanquished += 1
-                    print("Zombie vanquished!")
                 else:
                     self.game_over("Game over! You were caught by a zombie.")
                     return
