@@ -157,6 +157,8 @@ I found Cursor Composer's shortcuts and keymapping can sometimes be unintuitive 
 
 10. define which framework to use at the inital composer is very important
 
+11. Lose trucks of codes or entire function as code regenerates.
+
 ## Other Known problems of the tools
 
 1. Memory limit errors: Composer may fail with a "PHP Fatal error: Allowed memory size exhausted" message. This can be resolved by increasing the PHP memory limit [1][2].

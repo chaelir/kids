@@ -964,6 +964,12 @@ if __name__ == "__main__":
         return int(maze_difficulty * zombie_time_factor * speed_factor)
 
     def validate_settings(self):
+        """
+        Validates the game settings.
+        
+        Returns:
+            bool: True if all settings are valid, False otherwise.
+        """
         if not self.player_name or not self.player_name.strip():
             print("Please enter a valid player name.")
             return False
@@ -976,6 +982,38 @@ if __name__ == "__main__":
         if not (MIN_ZOMBIE_DELAY <= self.settings["zombie_delay"] <= MAX_ZOMBIE_DELAY):
             print(f"Zombie delay must be between {MIN_ZOMBIE_DELAY} and {MAX_ZOMBIE_DELAY}.")
             return False
+        return True
+
+    
+    def update_static_screen(self):
+        redraw_needed = False
+        events = pygame.event.get()
+
+        for event in events:
+            if event.type == pygame.QUIT:
+                print("Quit event detected")
+                return False
+            elif event.type == pygame.KEYDOWN:
+                if self.state == "welcome":
+                    self.handle_welcome_keydown(event)
+                    redraw_needed = True
+                elif self.state == "game_over":
+                    self.handle_game_over_keydown(event)
+                    redraw_needed = True
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if self.state == "welcome":
+                    self.handle_welcome_click(event.pos)
+                    redraw_needed = True
+
+        if redraw_needed:
+            self.draw()
+            pygame.display.flip()
+
+        self.clock.tick(60)  # Limit the frame rate to 60 FPS
+
+        if redraw_needed:
+            print(f"Current state: {self.state}, Active input: {self.active_input}, Player name: {self.player_name}")
+
         return True
 
     # Leaderboard methods
