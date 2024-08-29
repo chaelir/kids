@@ -1,8 +1,13 @@
+import os
+import sys
 import pygame
 import time
 import json
 from maze import Maze, backtracking
 import random
+
+# Change the working directory to the script's directory
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 # Constants
 SCREEN_WIDTH, SCREEN_HEIGHT = 1024, 768
@@ -76,16 +81,26 @@ class Game:
 
         self.sword_position = None
         self.sword_collected = False
-        self.sword_image = pygame.image.load("assets/sword.jpg")
+        self.sword_image = pygame.image.load(os.path.join("assets", "sword.jpg"))
         self.sword_image = pygame.transform.scale(self.sword_image, (TILE_SIZE, TILE_SIZE))
 
-        self.player_image = pygame.image.load("assets/nobody.jpg")
+        self.player_image = pygame.image.load(os.path.join("assets", "nobody.jpg"))
         self.player_image = pygame.transform.scale(self.player_image, (TILE_SIZE, TILE_SIZE))
-        self.player_with_sword_image = pygame.image.load("assets/sworded.jpg")
+        self.player_with_sword_image = pygame.image.load(os.path.join("assets", "sworded.jpg"))
         self.player_with_sword_image = pygame.transform.scale(self.player_with_sword_image, (TILE_SIZE, TILE_SIZE))
         self.current_player_image = self.player_image
 
+        self.zombie_image = pygame.image.load(os.path.join("assets", "zombie.jpg"))
+        self.zombie_image = pygame.transform.scale(self.zombie_image, (TILE_SIZE, TILE_SIZE))
+
         self.clock = pygame.time.Clock()
+
+        self.player_color = ORANGE
+        self.trail_color = MAGENTA
+        self.in_color = GREEN
+        self.out_color = BLUE
+
+        self.calculate_maze_dimensions()
 
     # Game initialization and state management
     def start_game(self):
@@ -127,6 +142,8 @@ class Game:
 
         self.update_zombie_timer()
         self.update_valid_moves()
+
+        self.calculate_maze_dimensions()
 
     def update_zombie_timer(self):
         if not self.sword_collected:
@@ -222,7 +239,7 @@ class Game:
             
             y += 50
 
-        speed_text = f"Zombie Speed: {'Fast' if self.settings['zombie_speed_fast'] else 'Slow'}"
+        speed_text = f"Zombie Speed: {'FAST' if self.settings['zombie_speed_fast'] else 'NORMAL'}"
         speed_surface = self.font.render(speed_text, True, WHITE)
         self.screen.blit(speed_surface, (controls_pane.x + 10, y))
         speed_toggle = self.font.render("Press S to toggle", True, LIGHT_GRAY)
@@ -240,7 +257,7 @@ class Game:
         self.screen.blit(start_text, start_text_rect)
 
     def draw_legend(self):
-        legend_x = self.screen_width - self.legend_width - self.margin
+        legend_x = self.screen_width - self.legend_width
         legend_y = self.margin
         legend_height = self.screen_height - 2 * self.margin
 
@@ -269,7 +286,7 @@ class Game:
             info_text = [
                 f"Maze Size: {self.maze.rows}x{self.maze.cols}",
                 f"Solution Length: {self.maze.get_solution_length()}",
-                f"Zombie Delay: {self.settings['zombie_delay']}s",
+                f"Zombie Delay: {self.settings['zombie_delay']:.2f}s",
                 f"Zombie Speed: {'Fast' if self.settings['zombie_speed_fast'] else 'Slow'}",
                 f"Flooding: {'ON' if self.settings['zombie_flooding_enabled'] else 'OFF'}",
                 f"Sword: {'Collected' if self.sword_collected else 'Not Collected'}"
@@ -279,52 +296,54 @@ class Game:
                 self.screen.blit(info_surface, (legend_x + 10, legend_y + 240 + i * 30))
 
     def draw_maze(self):
-        pygame.draw.rect(self.screen, BLACK, (self.offset_x, self.offset_y, 
-                                              self.cell_size * self.maze.cols, self.cell_size * self.maze.rows), 2)
+        maze_rect = pygame.Rect(self.offset_x, self.offset_y, 
+                               self.cell_size * self.maze.cols, 
+                               self.cell_size * self.maze.rows)
+        pygame.draw.rect(self.screen, WHITE, maze_rect)
+        pygame.draw.rect(self.screen, BLACK, maze_rect, 2)  # Border
 
         for row in range(self.maze.rows):
             for col in range(self.maze.cols):
                 x = self.offset_x + col * self.cell_size
                 y = self.offset_y + row * self.cell_size
-                if self.maze.is_wall(row, col):
-                    pygame.draw.rect(self.screen, BLACK, (x, y, self.cell_size, self.cell_size))
-                if (row, col) in self.zombie_flood:
-                    pygame.draw.rect(self.screen, RED, (x, y, self.cell_size, self.cell_size))
+                cell_rect = pygame.Rect(x, y, self.cell_size, self.cell_size)
 
-        pygame.draw.rect(self.screen, GREEN, (self.offset_x + self.maze.in_point[1] * self.cell_size,
-                                              self.offset_y + self.maze.in_point[0] * self.cell_size,
-                                              self.cell_size, self.cell_size))
-        pygame.draw.rect(self.screen, BLUE, (self.offset_x + self.maze.out_point[1] * self.cell_size,
-                                             self.offset_y + self.maze.out_point[0] * self.cell_size,
-                                             self.cell_size, self.cell_size))
+                if self.maze.is_wall(row, col):
+                    pygame.draw.rect(self.screen, BLACK, cell_rect)
+                if (row, col) in self.zombie_flood:
+                    self.screen.blit(self.zombie_image, (x, y))
+
+        # Draw IN point
+        in_rect = pygame.Rect(self.offset_x + self.maze.in_point[1] * self.cell_size,
+                              self.offset_y + self.maze.in_point[0] * self.cell_size,
+                              self.cell_size, self.cell_size)
+        pygame.draw.rect(self.screen, self.in_color, in_rect)
+        
+        # Draw OUT point
+        out_rect = pygame.Rect(self.offset_x + self.maze.out_point[1] * self.cell_size,
+                               self.offset_y + self.maze.out_point[0] * self.cell_size,
+                               self.cell_size, self.cell_size)
+        pygame.draw.rect(self.screen, self.out_color, out_rect)
 
         # Draw the sword if not collected
         if not self.sword_collected:
             sword_x = self.offset_x + self.sword_position[1] * self.cell_size
             sword_y = self.offset_y + self.sword_position[0] * self.cell_size
-            self.screen.blit(self.sword_image, (sword_x, sword_y))
+            self.screen.blit(pygame.transform.scale(self.sword_image, (self.cell_size, self.cell_size)), (sword_x, sword_y))
 
     def draw_player(self):
-        # Draw the player path
+        player_x = self.offset_x + self.player_position[1] * self.cell_size + self.cell_size // 2
+        player_y = self.offset_y + self.player_position[0] * self.cell_size + self.cell_size // 2
+        
+        # Draw player trail
         if len(self.player_path) > 1:
-            pygame.draw.lines(self.screen, MAGENTA, False, 
-                              [(self.offset_x + col * self.cell_size + self.cell_size // 2, 
-                                self.offset_y + row * self.cell_size + self.cell_size // 2) 
-                               for row, col in self.player_path], 
-                              width=3)
+            points = [(self.offset_x + pos[1] * self.cell_size + self.cell_size // 2,
+                       self.offset_y + pos[0] * self.cell_size + self.cell_size // 2) for pos in self.player_path]
+            pygame.draw.lines(self.screen, self.trail_color, False, points, 2)
 
-        # Draw tentative path
-        if len(self.tentative_path) > 1:
-            pygame.draw.lines(self.screen, YELLOW, False, 
-                              [(self.offset_x + col * self.cell_size + self.cell_size // 2, 
-                                self.offset_y + row * self.cell_size + self.cell_size // 2) 
-                               for row, col in self.tentative_path], 
-                              width=2)
-
-        # Draw current player position
-        player_x = self.offset_x + self.player_position[1] * self.cell_size
-        player_y = self.offset_y + self.player_position[0] * self.cell_size
-        self.screen.blit(self.current_player_image, (player_x, player_y))
+        # Draw player
+        player_rect = self.current_player_image.get_rect(center=(player_x, player_y))
+        self.screen.blit(self.current_player_image, player_rect)
 
     def draw_score_board(self):
         # Dark background
@@ -396,14 +415,17 @@ class Game:
                     self.settings[self.active_input] = new_value
         elif event.key == pygame.K_s:
             self.settings["zombie_speed_fast"] = not self.settings["zombie_speed_fast"]
+            self.draw_welcome_screen()  # Redraw the screen to show the updated setting
         elif event.key == pygame.K_f:
             self.settings["zombie_flooding_enabled"] = not self.settings["zombie_flooding_enabled"]
+            self.draw_welcome_screen()  # Redraw the screen to show the updated setting
         elif event.key == pygame.K_RETURN:
             if self.validate_settings():
                 self.start_game()
+                self.state = "playing"  # Add this line to change the game state
             else:
                 print("Please ensure all settings are valid before starting the game.")
-        self.draw_welcome_screen()
+        self.draw_welcome_screen()  # Redraw the screen after any changes
 
     def handle_maze_click(self, pos):
         cell = self.get_cell_from_pos(pos)
@@ -499,7 +521,8 @@ class Game:
         for cell in self.zombie_flood:
             for neighbor in self.maze.get_valid_neighbors(cell):
                 if neighbor not in self.zombie_flood and not self.maze.is_wall(*neighbor):
-                    new_cells.add(neighbor)
+                    if random.random() < (0.1 if self.settings["zombie_speed_fast"] else 0.05):
+                        new_cells.add(neighbor)
         
         self.zombie_flood.update(new_cells)
         self.update_valid_moves()
@@ -553,22 +576,18 @@ class Game:
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return False
-            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if self.state == "welcome":
-                    self.handle_welcome_click(event.pos)
-                elif self.state == "playing":
-                    self.handle_maze_click(event.pos)
-            elif event.type == pygame.MOUSEMOTION:
-                if self.state == "playing":
-                    self.handle_maze_hover(event.pos)
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.VIDEORESIZE:
+                self.handle_resize(event.size)
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     if self.state == "playing" or self.state == "game_over":
                         self.state = "welcome"
                         self.draw_welcome_screen()
                     else:
-                        return False
+                        pygame.quit()
+                        sys.exit()
                 elif self.state == "welcome":
                     self.handle_welcome_keydown(event)
                 elif self.state == "game_over":
@@ -597,7 +616,6 @@ class Game:
 
         self.draw()
         self.clock.tick(60)
-        return True
 
     def handle_keystroke(self, key):
         if self.state != "playing":
@@ -658,31 +676,55 @@ class Game:
         self.screen_width, self.screen_height = size
         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height), pygame.RESIZABLE)
         self.calculate_maze_dimensions()
+        self.draw()  # Force a redraw after resizing
 
     def calculate_maze_dimensions(self):
-        # Adjust these calculations based on your specific layout
-        self.maze_width = self.screen_width - 200  # Assuming 200px for the legend
-        self.maze_height = self.screen_height
-        self.cell_size = min(self.maze_width // self.maze.cols, self.maze_height // self.maze.rows)
-        self.offset_x = (self.maze_width - self.cell_size * self.maze.cols) // 2
-        self.offset_y = (self.maze_height - self.cell_size * self.maze.rows) // 2
+        if self.maze is None:
+            return  # Don't calculate if maze doesn't exist yet
+        
+        available_width = self.screen_width - self.legend_width - 2 * self.margin
+        available_height = self.screen_height - 2 * self.margin
+        self.cell_size = min(available_width // self.maze.cols, available_height // self.maze.rows)
+        maze_width = self.cell_size * self.maze.cols
+        maze_height = self.cell_size * self.maze.rows
+        self.offset_x = self.margin + (available_width - maze_width) // 2
+        self.offset_y = self.margin + (available_height - maze_height) // 2
+
+    def update(self):
+        if self.state == "playing":
+            self.update_zombie_flood()
+            if self.player_position in self.zombie_flood:
+                self.game_over("You were caught by zombies!")
+            elif self.player_position == self.maze.out_point:
+                score = self.calculate_score()
+                self.update_leaderboard(score)
+                self.game_over(f"You escaped! Score: {score}")
+            elif self.player_position == self.sword_position:
+                self.sword_collected = True
+                self.current_player_image = self.player_with_sword_image
+                self.zombie_flood.clear()
+                pygame.time.set_timer(self.ZOMBIE_UPDATE_EVENT, 0)
 
 def main():
     pygame.init()
-    screen = pygame.display.set_mode((MAP_WIDTH + 200, MAP_HEIGHT), pygame.RESIZABLE)
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
+    pygame.display.set_caption("EscapeZombMania")
     game = Game(screen)
     
-    while True:
-        if not game.handle_events():
-            break
+    clock = pygame.time.Clock()
+    running = True
+    while running:
+        game.handle_events()
+        
+        if game.state == "playing":
+            game.update()
+        
         game.draw()
         pygame.display.flip()
-        game.clock.tick(60)
+        clock.tick(60)  # Limit to 60 FPS
 
     pygame.quit()
-
-if __name__ == "__main__":
-    main()
+    sys.exit()
 
 if __name__ == "__main__":
     main()
