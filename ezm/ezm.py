@@ -139,8 +139,6 @@ class Game:
         self.in_color = GREEN
         self.out_color = BLUE
 
-        self.calculate_maze_dimensions()
-
         self.zombie_move_time = 0
         self.zombie_move_delay = 1  # Adjust this value to change zombie speed (higher = slower)
 
@@ -148,6 +146,10 @@ class Game:
         self.current_algorithm = 'backtracking'  # Default algorithm
 
         self.player = None  # Initialize to None, will be created in start_game
+
+        self.show_trail = True
+        self.show_solution = False
+        self.solution_color = (255, 215, 0)  # Gold color for solution
 
     def load_maze_algorithms(self):
         self.maze_algorithms = {}
@@ -202,10 +204,40 @@ class Game:
             self.zombie_spawn_start_time = time.time() + self.settings["zombie_delay"]
             self.zombies_vanquished = 0
             self.calculate_maze_dimensions()  # Add this line
+            self.spawn_sword()
+            print(f"Sword spawned at {self.sword_position}")
         else:
             print("Maze generation failed. Returning to welcome screen.")
             self.state = "welcome"
             self.zombie_spawn_start_time = None
+
+    def spawn_sword(self):
+        empty_cells = [(r, c) for r in range(self.maze.rows) for c in range(self.maze.cols) 
+                       if not self.maze.is_wall(r, c) and (r, c) != self.player_position
+                       and (r, c) != self.maze.out_point]
+        self.sword_position = random.choice(empty_cells) if empty_cells else None
+        print(f"Sword position: {self.sword_position}")
+
+    def spawn_zombies(self):
+        if not self.settings["zombie_spawning_enabled"] or self.zombie_spawn_start_time is None or time.time() < self.zombie_spawn_start_time:
+            print("Zombie spawning conditions not met")
+            return
+        
+        max_zombies = int(getenv('MAX_ZOMBIES', '2'))
+        current_zombies = len(self.zombies)
+        total_zombies = current_zombies + self.zombies_vanquished
+
+        print(f"Current zombies: {current_zombies}, Total spawned: {total_zombies}, Max allowed: {max_zombies}")
+
+        if total_zombies < max_zombies:
+            new_pos = self.get_random_empty_position()
+            if new_pos:
+                new_zombie = Zombie((new_pos[1] * self.cell_size + self.cell_size // 2,
+                                     new_pos[0] * self.cell_size + self.cell_size // 2))
+                self.zombies.add(new_zombie)
+                print(f"New zombie spawned at {new_pos}")
+            else:
+                print("No empty position found for zombie spawning")
 
     def update_zombie_timer(self):
         if not self.sword_collected:
@@ -376,7 +408,9 @@ class Game:
                 f"Zombie Speed: {'Fast' if self.settings['zombie_speed_fast'] else 'Slow'}",
                 f"Spawning: {'ON' if self.settings['zombie_spawning_enabled'] else 'OFF'}",
                 f"Sword: {'Collected' if self.sword_collected else 'Not Collected'}",
-                f"Zombies Vanquished: {self.zombies_vanquished}"
+                f"Zombies Vanquished: {self.zombies_vanquished}",
+                f"Show Trail: {'ON' if self.show_trail else 'OFF'}",
+                f"Show Solution: {'ON' if self.show_solution else 'OFF'}"
             ]
             for i, text in enumerate(info_text):
                 info_surface = self.font.render(text, True, BLACK)
@@ -425,19 +459,19 @@ class Game:
             sword_y = self.offset_y + self.sword_position[0] * self.cell_size
             self.screen.blit(pygame.transform.scale(self.sword_image, (self.cell_size, self.cell_size)), (sword_x, sword_y))
 
-        # Draw the player
-        if self.player_position:
-            player_x = self.offset_x + self.player_position[1] * self.cell_size
-            player_y = self.offset_y + self.player_position[0] * self.cell_size
-            player_image = self.player_with_sword_image if self.sword_collected else self.player_image
-            self.screen.blit(pygame.transform.scale(player_image, (self.cell_size, self.cell_size)), (player_x, player_y))
-            print(f"Drawing player at {self.player_position}")  # Debug print
-            
-            # Draw player trail
-            if len(self.player_path) > 1:
-                points = [(self.offset_x + pos[1] * self.cell_size + self.cell_size // 2,
-                           self.offset_y + pos[0] * self.cell_size + self.cell_size // 2) for pos in self.player_path]
-                pygame.draw.lines(self.screen, self.trail_color, False, points, 2)
+        # Draw solution if enabled
+        if self.show_solution and self.maze.solution:
+            solution_points = [(self.offset_x + col * self.cell_size + self.cell_size // 2,
+                                self.offset_y + row * self.cell_size + self.cell_size // 2)
+                               for row, col in self.maze.solution]
+            pygame.draw.lines(self.screen, self.solution_color, False, solution_points, 2)
+
+        # Draw player trail if enabled
+        if self.show_trail and len(self.player_path) > 1:
+            trail_points = [(self.offset_x + col * self.cell_size + self.cell_size // 2,
+                             self.offset_y + row * self.cell_size + self.cell_size // 2)
+                            for row, col in self.player_path]
+            pygame.draw.lines(self.screen, self.trail_color, False, trail_points, 2)
 
         # Draw zombies
         for zombie in self.zombies:
@@ -452,12 +486,6 @@ class Game:
             player_image = self.player_with_sword_image if self.sword_collected else self.player_image
             self.screen.blit(pygame.transform.scale(player_image, (self.cell_size, self.cell_size)), (player_x, player_y))
             print(f"Drawing player at {self.player_position}")  # Debug print
-            
-            # Draw player trail
-            if len(self.player_path) > 1:
-                points = [(self.offset_x + pos[1] * self.cell_size + self.cell_size // 2,
-                           self.offset_y + pos[0] * self.cell_size + self.cell_size // 2) for pos in self.player_path]
-                pygame.draw.lines(self.screen, self.trail_color, False, points, 2)
 
     def draw_score_board(self):
         # Dark background
@@ -630,21 +658,6 @@ class Game:
     def is_valid_path(self, path):
         return all(self.maze.get_valid_neighbors(cell) for cell in path)
 
-    def spawn_zombies(self):
-        if not self.settings["zombie_spawning_enabled"] or self.zombie_spawn_start_time is None or time.time() < self.zombie_spawn_start_time:
-            return
-        
-        max_zombies = int(getenv('MAX_ZOMBIES', '2'))
-        current_zombies = len(self.zombies)
-        total_zombies = current_zombies + self.zombies_vanquished
-
-        if total_zombies < max_zombies:
-            new_pos = self.get_random_empty_position()
-            if new_pos:
-                new_zombie = Zombie((new_pos[1] * self.cell_size + self.cell_size // 2,
-                                     new_pos[0] * self.cell_size + self.cell_size // 2))
-                self.zombies.add(new_zombie)
-
     def move_zombies(self):
         for zombie in self.zombies:
             dx = random.choice([-1, 0, 1])
@@ -798,64 +811,31 @@ class Game:
         self.draw()  # Redraw the game after each move
 
     def check_zombie_collisions(self):
-        player_rect = pygame.Rect(self.offset_x + self.player_position[1] * self.cell_size,
-                                  self.offset_y + self.player_position[0] * self.cell_size,
-                                  self.cell_size, self.cell_size)
-        
-        collided_zombies = [zombie for zombie in self.zombies if player_rect.colliderect(zombie.rect)]
-        
-        if collided_zombies:
-            if self.sword_collected:
-                for zombie in collided_zombies:
+        for zombie in self.zombies:
+            if zombie.position == self.player_position:
+                if self.sword_collected:
                     self.zombies.remove(zombie)
                     self.zombies_vanquished += 1
-            else:
-                self.game_over("Game Over! You've been caught by zombies.")
-
-    def move_player(self, target_cell):
-        path = self.get_path_to_cell(target_cell)
-        for cell in path[1:]:  # Skip the first cell (current position)
-            self.player_position = cell
-            self.player_path.append(cell)
-        self.tentative_path = []
-        self.update_valid_moves()
-
-    def handle_resize(self, size):
-        self.screen_width, self.screen_height = size
-        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height), pygame.RESIZABLE)
-        self.calculate_maze_dimensions()
-        self.draw()  # Force a redraw after resizing
-
-    def calculate_maze_dimensions(self):
-        if self.maze is None:
-            return  # Don't calculate if maze doesn't exist yet
-        
-        available_width = self.screen_width - self.legend_width - 2 * self.margin
-        available_height = self.screen_height - 2 * self.margin
-        self.cell_size = min(available_width // self.maze.cols, available_height // self.maze.rows)
-        maze_width = self.cell_size * self.maze.cols
-        maze_height = self.cell_size * self.maze.rows
-        self.offset_x = self.margin + (available_width - maze_width) // 2
-        self.offset_y = self.margin + (available_height - maze_height) // 2
+                    print("Zombie vanquished!")
+                else:
+                    self.game_over("Game over! You were caught by a zombie.")
+                    return
 
     def update(self):
         if self.state == "playing" and self.maze:
             self.spawn_zombies()
             self.move_zombies()
+            print(f"Number of zombies: {len(self.zombies)}")
+
+        self.draw()
+        self.clock.tick(30)
 
 if __name__ == "__main__":
     pygame.init()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
-    pygame.display.set_caption(getenv('GAME_TITLE', 'EscapeZombieMazia'))
+    pygame.display.set_caption("EscapeZombieMazia")
+
     game = Game(screen)
-    
-    running = True
-    while running:
+    while True:
         game.handle_events()
         game.update()
-        game.draw()
-        
-        pygame.display.flip()
-    
-    pygame.quit()
-    sys.exit()
