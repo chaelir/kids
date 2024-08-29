@@ -658,6 +658,7 @@ class Game:
         self.screen.blit(instructions, instructions_rect)
 
     def validate_settings(self):
+        # need to precede handle_welcome_keydown
         if not self.player_name or not self.player_name.strip():
             print("Please enter a valid player name.")
             return False
