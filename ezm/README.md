@@ -1,6 +1,8 @@
 # EscapeZombieMazia
 
-![EZM Go](ezm.png)
+![EZM](ezm.png)
+
+![MAZE](maze.png)
 
 EscapeZombieMazia is a maze-based game where players navigate through procedurally generated mazes while avoiding zombies and collecting items.
 
@@ -39,6 +41,9 @@ EscapeZombieMazia combines elements from several of these, such as:
 This combination makes the game unique while still being familiar to players who enjoy maze-based challenges. The addition of different maze generation algorithms as a selectable feature is particularly interesting and educational.
 
 ## Getting Started
+
+Under development. For now, see INSTALL.md
+Edit the emz.env to change difficulty and other parameters.
 
 To get started with EscapeZombieMazia:
 
