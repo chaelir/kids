@@ -657,6 +657,21 @@ class Game:
         instructions_rect = instructions.get_rect(center=(self.screen_width // 2, self.screen_height - 30))
         self.screen.blit(instructions, instructions_rect)
 
+    def validate_settings(self):
+        if not self.player_name or not self.player_name.strip():
+            print("Please enter a valid player name.")
+            return False
+        if not (MIN_MAZE_WIDTH <= self.settings["maze_width"] <= MAX_MAZE_WIDTH):
+            print(f"Maze width must be between {MIN_MAZE_WIDTH} and {MAX_MAZE_WIDTH}.")
+            return False
+        if not (MIN_MAZE_HEIGHT <= self.settings["maze_height"] <= MAX_MAZE_HEIGHT):
+            print(f"Maze height must be between {MIN_MAZE_HEIGHT} and {MAX_MAZE_HEIGHT}.")
+            return False
+        if not (MIN_ZOMBIE_DELAY <= self.settings["zombie_delay"] <= MAX_ZOMBIE_DELAY):
+            print(f"Zombie delay must be between {MIN_ZOMBIE_DELAY} and {MAX_ZOMBIE_DELAY}.")
+            return False
+        return True
+
     # Event handling methods
     def handle_welcome_click(self, pos):
         print(f"Welcome click at position: {pos}")
@@ -947,26 +962,6 @@ class Game:
         speed_factor = 2 if self.settings.get("zombie_speed_fast", False) else 1
         return int(maze_difficulty * zombie_time_factor * speed_factor)
 
-    def validate_settings(self):
-        """
-        Validates the game settings.
-        
-        Returns:
-            bool: True if all settings are valid, False otherwise.
-        """
-        if not self.player_name or not self.player_name.strip():
-            print("Please enter a valid player name.")
-            return False
-        if not (MIN_MAZE_WIDTH <= self.settings["maze_width"] <= MAX_MAZE_WIDTH):
-            print(f"Maze width must be between {MIN_MAZE_WIDTH} and {MAX_MAZE_WIDTH}.")
-            return False
-        if not (MIN_MAZE_HEIGHT <= self.settings["maze_height"] <= MAX_MAZE_HEIGHT):
-            print(f"Maze height must be between {MIN_MAZE_HEIGHT} and {MAX_MAZE_HEIGHT}.")
-            return False
-        if not (MIN_ZOMBIE_DELAY <= self.settings["zombie_delay"] <= MAX_ZOMBIE_DELAY):
-            print(f"Zombie delay must be between {MIN_ZOMBIE_DELAY} and {MAX_ZOMBIE_DELAY}.")
-            return False
-        return True
 
     
     def update_static_screen(self):
