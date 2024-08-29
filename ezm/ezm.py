@@ -160,17 +160,12 @@ class Game:
 
         self.sword_position = None
         self.sword_collected = False
-        self.sword_image = pygame.image.load(os.path.join("assets", "sword.jpg"))
-        self.sword_image = pygame.transform.scale(self.sword_image, (TILE_SIZE, TILE_SIZE))
-
-        self.player_image = pygame.image.load(os.path.join("assets", "nobody.jpg"))
-        self.player_image = pygame.transform.scale(self.player_image, (TILE_SIZE, TILE_SIZE))
-        self.player_with_sword_image = pygame.image.load(os.path.join("assets", "sworded.jpg"))
-        self.player_with_sword_image = pygame.transform.scale(self.player_with_sword_image, (TILE_SIZE, TILE_SIZE))
+        self.sword_image = pygame.image.load(os.path.join("assets", "sword.jpg")).convert_alpha()
+        self.player_image = pygame.image.load(os.path.join("assets", "nobody.jpg")).convert_alpha()
+        self.player_with_sword_image = pygame.image.load(os.path.join("assets", "sworded.jpg")).convert_alpha()
         self.current_player_image = self.player_image
 
-        self.zombie_image = pygame.image.load(os.path.join("assets", "zombie.jpg"))
-        self.zombie_image = pygame.transform.scale(self.zombie_image, (TILE_SIZE, TILE_SIZE))
+        self.zombie_image = pygame.image.load(os.path.join("assets", "zombie.jpg")).convert_alpha()
 
         self.clock = pygame.time.Clock()
 
@@ -194,17 +189,17 @@ class Game:
         print(f"Initial game state: {self.state}")  # Add this line
 
         # Load asset images for the welcome screen
-        self.sword_welcome_image = pygame.image.load(os.path.join("assets", "sword.jpg"))
-        self.player_welcome_image = pygame.image.load(os.path.join("assets", "nobody.jpg"))
-        self.player_with_sword_welcome_image = pygame.image.load(os.path.join("assets", "sworded.jpg"))
-        self.zombie_welcome_image = pygame.image.load(os.path.join("assets", "zombie.jpg"))
+        self.sword_welcome_image = pygame.image.load(os.path.join("assets", "sword.jpg")).convert_alpha()
+        self.player_welcome_image = pygame.image.load(os.path.join("assets", "nobody.jpg")).convert_alpha()
+        self.player_with_sword_welcome_image = pygame.image.load(os.path.join("assets", "sworded.jpg")).convert_alpha()
+        self.zombie_welcome_image = pygame.image.load(os.path.join("assets", "zombie.jpg")).convert_alpha()
 
         # Scale the images to a suitable size for the welcome screen
         welcome_image_size = (100, 100)
-        self.sword_welcome_image = pygame.transform.scale(self.sword_welcome_image, welcome_image_size)
-        self.player_welcome_image = pygame.transform.scale(self.player_welcome_image, welcome_image_size)
-        self.player_with_sword_welcome_image = pygame.transform.scale(self.player_with_sword_welcome_image, welcome_image_size)
-        self.zombie_welcome_image = pygame.transform.scale(self.zombie_welcome_image, welcome_image_size)
+        self.sword_welcome_image = pygame.transform.smoothscale(self.sword_welcome_image, welcome_image_size)
+        self.player_welcome_image = pygame.transform.smoothscale(self.player_welcome_image, welcome_image_size)
+        self.player_with_sword_welcome_image = pygame.transform.smoothscale(self.player_with_sword_welcome_image, welcome_image_size)
+        self.zombie_welcome_image = pygame.transform.smoothscale(self.zombie_welcome_image, welcome_image_size)
 
         # Draw the welcome screen immediately
         self.draw_welcome_screen()
@@ -439,7 +434,7 @@ class Game:
         for i, (image, label) in enumerate(images):
             x = rules_pane.x + 10 + i * (welcome_image_size[0] + image_spacing)
             y = images_start_y
-            self.screen.blit(pygame.transform.scale(image, welcome_image_size), (x, y))
+            self.screen.blit(pygame.transform.smoothscale(image, welcome_image_size), (x, y))
             label_surface = self.font.render(label, True, WHITE)
             label_rect = label_surface.get_rect(center=(x + welcome_image_size[0] // 2, y + welcome_image_size[1] + 20))
             self.screen.blit(label_surface, label_rect)
@@ -600,7 +595,8 @@ class Game:
         if not self.sword_collected and self.sword_position:
             sword_x = self.offset_x + self.sword_position[1] * self.cell_size
             sword_y = self.offset_y + self.sword_position[0] * self.cell_size
-            self.screen.blit(pygame.transform.scale(self.sword_image, (self.cell_size, self.cell_size)), (sword_x, sword_y))
+            scaled_sword = pygame.transform.smoothscale(self.sword_image, (self.cell_size, self.cell_size))
+            self.screen.blit(scaled_sword, (sword_x, sword_y))
 
         # Draw solution if enabled
         if self.settings.get('show_solution', False) and self.maze.solution:
@@ -621,14 +617,16 @@ class Game:
             pos = zombie.get_current_position()
             zombie_x = self.offset_x + pos[1] * self.cell_size
             zombie_y = self.offset_y + pos[0] * self.cell_size
-            self.screen.blit(pygame.transform.scale(self.zombie_image, (self.cell_size, self.cell_size)), (zombie_x, zombie_y))
+            scaled_zombie = pygame.transform.smoothscale(self.zombie_image, (self.cell_size, self.cell_size))
+            self.screen.blit(scaled_zombie, (zombie_x, zombie_y))
 
     def draw_player(self):
         if self.player_position:
             player_x = self.offset_x + self.player_position[1] * self.cell_size
             player_y = self.offset_y + self.player_position[0] * self.cell_size
             player_image = self.player_with_sword_image if self.sword_collected else self.player_image
-            self.screen.blit(pygame.transform.scale(player_image, (self.cell_size, self.cell_size)), (player_x, player_y))
+            scaled_player = pygame.transform.smoothscale(player_image, (self.cell_size, self.cell_size))
+            self.screen.blit(scaled_player, (player_x, player_y))
 
     def draw_score_board(self):
         # Dark background
