@@ -794,3 +794,24 @@ class Game:
         if self.state == "playing":
             self.spawn_zombies()
             self.move_zombies()
+
+if __name__ == "__main__":
+    pygame.init()
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
+    pygame.display.set_caption("EscapeZombieMazia")
+    game = Game(screen)
+    
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            game.handle_event(event)
+        
+        game.update()
+        game.draw()
+        
+        pygame.display.flip()
+    
+    pygame.quit()
+    sys.exit()
