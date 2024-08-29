@@ -40,7 +40,7 @@ These tutorials provide comprehensive overviews and hands-on demonstrations of C
 
 # Composer Mode
 
-Composer Mode is a powerful feature in Cursor that allows developers to interact with AI using natural language to generate, modify, and refactor code. It provides an intuitive interface for leveraging AI assistance in your development workflow.
+Composer Mode is a powerful feature in Cursor that allows developers to interact with AI using natural language to generate, modify, and refactor code. It is very powerful and can be used to generate entire classes or functions for multiple files. It provides an intuitive interface for leveraging AI assistance in your development workflow. You can accpet all changes at once by clicking the "Accept All" button.
 
 ## Key Features of Composer Mode
 
@@ -145,6 +145,11 @@ I found Cursor Composer's shortcuts and keymapping can sometimes be unintuitive 
 
 5. Not working well with Vim mode
 
+6. After a while, Cursor Composer may stop working and will need to be restarted, or occasionally crashes the Cursor IDE.
+
+6. Undesired overwriting of files, wish a way to specify which files are immune to changes. 
+
+7. AI coding not working well with designing complex game controls. handling dependencies of all types of states change are still immature.
 
 ## Other Known problems of the tools
 

@@ -33,7 +33,7 @@ class Maze:
             'sidewinder': 'sidewinderMaze',
             'binary_tree': 'binaryTreeMaze',
             'prims': 'primsMaze',
-            'recursive_division': 'recursive_divisionMaze'  # Changed this to match the JS function name
+            'recursive_division': 'recursiveDivisionMaze'  # This is correct now
         }
         
         if self.generation_algorithm not in algorithms:
