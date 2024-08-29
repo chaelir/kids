@@ -1,20 +1,23 @@
-EscapeZombieMania!
 
-Windows (version stuck):
+
+== EscapeZombieMazia! ==
+
+== Windows ==
 
 Required Packages:
-Python             # download
+Python             # download and install
 Python pip         # download and > py get-pip.py
 Python pygame      > pip install pygame
 Python PyExecJS    > pip install PyExecJS 
-NodeJS             # download
+NodeJS             # download and install
 
 To Play:
-download the dir
 install the required packages
+download the code dir
 >py ezm.py
 
-WSL:
+
+== WSL ==
 
 Required Packages:
 Python             > apt install python3

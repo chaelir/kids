@@ -1,13 +1,14 @@
 import random
 import execjs
-from typing import Callable, List, Tuple
+import os
+from typing import List, Tuple
 
 # Type aliases for clarity
 Grid = List[List[int]]
 Point = Tuple[int, int]
 
 class Maze:
-    def __init__(self, rows: int, cols: int, generation_algorithm: Callable[['Maze'], None]):
+    def __init__(self, rows: int, cols: int, generation_algorithm: str = 'recursive_division'):
         # Ensure dimensions are odd
         self.rows = rows - 1 if rows % 2 == 0 else rows
         self.cols = cols - 1 if cols % 2 == 0 else cols
@@ -19,12 +20,57 @@ class Maze:
         self.generate()
 
     def generate(self):
-        print(f"Generating maze with size {self.rows}x{self.cols}")
-        self.generation_algorithm(self)
+        print(f"Generating maze with size {self.rows}x{self.cols} using {self.generation_algorithm} algorithm")
+        js_file = f'{self.generation_algorithm.replace("_", "-")}.js'
+        
+        algorithms = {
+            'backtracking': 'backtrackingMaze',
+            'hunt_and_kill': 'huntAndKillMaze',
+            'wilsons': 'wilsonsMaze',
+            'ellers': 'ellersMaze',
+            'kruskals': 'kruskalsMaze',
+            'aldous_broder': 'aldousBroderMaze',
+            'sidewinder': 'sidewinderMaze',
+            'binary_tree': 'binaryTreeMaze',
+            'prims': 'primsMaze',
+            'recursive_division': 'recursiveDivisionMaze'
+        }
+        
+        if self.generation_algorithm not in algorithms:
+            print(f"Unknown algorithm: {self.generation_algorithm}. Using backtracking.")
+            self.generation_algorithm = 'backtracking'
+        
+        try:
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            js_file_path = os.path.join(script_dir, 'mazeai', js_file)
+            
+            with open(js_file_path, 'r') as file:
+                js_code = file.read()
+
+            ctx = execjs.compile(js_code)
+            js_maze = ctx.call(algorithms[self.generation_algorithm], self.cols, self.rows)
+
+            print(f"JavaScript-generated maze using {self.generation_algorithm}:")
+            for row in js_maze:
+                print(''.join(['#' if cell == 1 else ' ' for cell in row]))
+            print()  # Add an empty line after the maze
+
+            self.grid = js_maze
+        except Exception as e:
+            print(f"Error in {self.generation_algorithm} maze generation: {e}")
+            print("Falling back to a simple maze...")
+            self.create_simple_maze()
+
         self.ensure_entrance_exit()
         self.solution = self.find_solution()
         print("Maze generation complete")
         print(self)
+
+    def create_simple_maze(self):
+        self.grid = [[1 for _ in range(self.cols)] for _ in range(self.rows)]
+        for i in range(1, self.rows - 1, 2):
+            for j in range(1, self.cols - 1, 2):
+                self.grid[i][j] = 0
 
     def ensure_entrance_exit(self):
         self.grid[self.in_point[0]][self.in_point[1]] = 0
@@ -81,138 +127,38 @@ class Maze:
         for j in range(self.cols):
             self.grid[0][j] = self.grid[self.rows-1][j] = 1
 
-# Maze generation algorithms
-
-def recursive_division(maze: Maze):
-    # Make dimensions odd
-    maze.cols -= maze.cols % 2
-    maze.cols += 1
-    maze.rows -= maze.rows % 2
-    maze.rows += 1
-
-    def divide(i_coords, j_coords, hv):
-        i_dim = i_coords[1] - i_coords[0]
-        j_dim = j_coords[1] - j_coords[0]
-
-        if i_dim <= 0 or j_dim <= 0:
-            return
-
-        if hv == "h":
-            split = random.randrange(i_coords[0], i_coords[1] + 1, 2)
-            hole = random.randrange(j_coords[0] + 1, j_coords[1] + 1, 2)
-
-            for j in range(j_coords[0], j_coords[1] + 1):
-                if j != hole:
-                    maze.grid[split][j] = 1
-
-            divide([i_coords[0], split - 1], j_coords, horv(split - i_coords[0] - 1, j_dim))
-            divide([split + 1, i_coords[1]], j_coords, horv(i_coords[1] - split - 1, j_dim))
-
-        else:
-            split = random.randrange(j_coords[0], j_coords[1] + 1, 2)
-            hole = random.randrange(i_coords[0] + 1, i_coords[1] + 1, 2)
-
-            for i in range(i_coords[0], i_coords[1] + 1):
-                if i != hole:
-                    maze.grid[i][split] = 1
-
-            divide(i_coords, [j_coords[0], split - 1], horv(i_dim, split - j_coords[0] - 1))
-            divide(i_coords, [split + 1, j_coords[1]], horv(i_dim, j_coords[1] - split - 1))
-
-    def horv(i_dim, j_dim):
-        if i_dim < j_dim:
-            return "v"
-        elif j_dim < i_dim:
-            return "h"
-        else:
-            return random.choice(["h", "v"])
-
-    # Initialize the grid with passages
-    maze.grid = [[0 for _ in range(maze.cols)] for _ in range(maze.rows)]
-
-    # Add outer walls
-    for i in range(maze.rows):
-        maze.grid[i][0] = maze.grid[i][maze.cols - 1] = 1
-    for j in range(maze.cols):
-        maze.grid[0][j] = maze.grid[maze.rows - 1][j] = 1
-
-    # Start the recursive division
-    divide([1, maze.rows - 2], [1, maze.cols - 2], horv(maze.rows - 2, maze.cols - 2))
-
-    # Ensure entrance and exit
-    maze.grid[0][1] = 0
-    maze.grid[maze.rows - 1][maze.cols - 2] = 0
-
-def backtracking(maze: Maze):
-    try:
-        # Read the JavaScript code from the file
-        with open('backtracking.js', 'r') as file:
-            js_code = file.read()
-
-        # Create a JavaScript context
-        ctx = execjs.compile(js_code)
-
-        # Call the JavaScript function
-        js_maze = ctx.call("backtrackingMaze", maze.cols, maze.rows)
-
-        # Print the JavaScript-generated maze
-        print("JavaScript-generated maze:")
-        for row in js_maze:
-            print(''.join(['#' if cell == 1 else ' ' for cell in row]))
-        print()  # Add an empty line after the maze
-
-        # Convert the JavaScript maze to Python and update the Maze object
-        maze.grid = js_maze
-
-    except Exception as e:
-        print(f"Error in backtracking maze generation: {e}")
-        print("Falling back to a simple maze...")
-        # Create a simple maze as a fallback
-        maze.grid = [[1 for _ in range(maze.cols)] for _ in range(maze.rows)]
-        for i in range(1, maze.rows - 1, 2):
-            for j in range(1, maze.cols - 1, 2):
-                maze.grid[i][j] = 0
-
-    # Ensure entrance and exit are open
-    maze.grid[maze.in_point[0]][maze.in_point[1]] = 0
-    maze.grid[maze.out_point[0]][maze.out_point[1]] = 0
-
-# Generic test function
-def test_maze_generation(algorithm: Callable[[Maze], None], algorithm_name: str, num_tests: int = 1):
-    print(f"Running {num_tests} tests for {algorithm_name} algorithm...")
+# Update the test_maze_generation function
+def test_maze_generation(num_tests: int = 1):
+    algorithms = [
+        'recursive_division', 'backtracking', 'hunt_and_kill', 'wilsons',
+        'ellers', 'kruskals', 'aldous_broder', 'sidewinder', 'binary_tree', 'prims'
+    ]
     
-    last_maze = None
-    
-    for i in range(num_tests):
-        rows = 11  # Odd number
-        cols = 11  # Odd number
+    for algorithm in algorithms:
+        print(f"\nRunning {num_tests} tests for {algorithm} algorithm...")
         
-        maze = Maze(rows, cols, algorithm)
-        last_maze = maze
-        
-        print(f"\nGenerated maze (Test {i+1}):")
-        print(maze)  # Print the maze after generation
+        for i in range(num_tests):
+            rows = 11  # Odd number
+            cols = 11  # Odd number
+            
+            maze = Maze(rows, cols, algorithm)
+            
+            print(f"\nGenerated maze (Test {i+1}):")
+            print(maze)
 
-        # Check if entrance and exit are open
-        if maze.grid[maze.in_point[0]][maze.in_point[1]] != 0 or maze.grid[maze.out_point[0]][maze.out_point[1]] != 0:
-            print(f"Test {i+1} failed: Entrance or exit is blocked")
-            return False
+            if maze.grid[maze.in_point[0]][maze.in_point[1]] != 0 or maze.grid[maze.out_point[0]][maze.out_point[1]] != 0:
+                print(f"Test {i+1} failed: Entrance or exit is blocked")
+                return False
+            
+            if not maze.solution:
+                print(f"Test {i+1} failed: No valid path from entrance to exit")
+                return False
+            
+            print(f"Test {i+1} passed: Maze size {rows}x{cols}")
         
-        # Check if there's a valid path from entrance to exit
-        if not maze.solution:
-            print(f"Test {i+1} failed: No valid path from entrance to exit")
-            return False
-        
-        print(f"Test {i+1} passed: Maze size {rows}x{cols}")
-    
-    print(f"All tests passed successfully for {algorithm_name}!")
-    
-    if last_maze:
-        print(f"\nLast generated maze using {algorithm_name}:")
-        print(last_maze)
+        print(f"All tests passed successfully for {algorithm}!")
     
     return True
 
 if __name__ == "__main__":
-    #test_maze_generation(recursive_division, "Recursive Division")
-    test_maze_generation(backtracking, "Backtracking")
+    test_maze_generation()

@@ -3,8 +3,10 @@ import sys
 import pygame
 import time
 import json
-from maze import Maze, backtracking
+from maze import Maze
 import random
+import importlib.util
+import execjs
 
 # Change the working directory to the script's directory
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -21,7 +23,19 @@ TILE_SIZE = 32  # Adjust this value as needed
 MAP_WIDTH = 800
 MAP_HEIGHT = 600
 
-MAX_ZOMBIES = 10  # Adjust this number as needed
+MAX_ZOMBIES = 2  # Adjust this number as needed
+
+class Player(pygame.sprite.Sprite):
+    def __init__(self, pos):
+        super().__init__()
+        self.image = pygame.Surface((20, 20))
+        self.image.fill(ORANGE)
+        self.rect = self.image.get_rect(center=pos)
+        self.has_sword = False
+
+    def collect_sword(self):
+        self.has_sword = True
+        self.image.fill(YELLOW)  # Change color when sword is collected
 
 class Game:
     def __init__(self, screen: pygame.Surface):
@@ -45,6 +59,7 @@ class Game:
         self.game_finished = False
         self.game_message = ""
         self.zombie_spawn_start_time = None
+        self.zombies_vanquished = 0
 
         pygame.font.init()
         self.font = pygame.font.Font(None, 24)
@@ -58,7 +73,8 @@ class Game:
             "maze_height": 29,
             "zombie_delay": 5,
             "zombie_speed_fast": True,  # Default to True
-            "zombie_spawning_enabled": True  # Default to True
+            "zombie_spawning_enabled": True,  # Default to True
+            "generation_algorithm": "recursive_division"  # Add this line
         }
         self.player_name = "CX"  # Set default name to CX
         self.input_boxes = {
@@ -71,7 +87,7 @@ class Game:
 
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
 
-        self.maze_generation_algorithm = backtracking
+        self.maze_generation_algorithm = 'backtracking'
         self.cursor_size = 3
 
         self.cursor = pygame.Surface((15, 15), pygame.SRCALPHA)
@@ -107,6 +123,28 @@ class Game:
         self.zombie_move_time = 0
         self.zombie_move_delay = 1  # Adjust this value to change zombie speed (higher = slower)
 
+        self.load_maze_algorithms()
+        self.current_algorithm = 'backtracking'  # Default algorithm
+
+        self.player = None  # Initialize to None, will be created in start_game
+
+    def load_maze_algorithms(self):
+        self.maze_algorithms = {}
+        algorithm_dir = 'mazeai'
+        for filename in os.listdir(algorithm_dir):
+            if filename.endswith('.js'):
+                algorithm_name = filename[:-3]
+                with open(os.path.join(algorithm_dir, filename), 'r') as file:
+                    js_code = file.read()
+                ctx = execjs.compile(js_code)
+                self.maze_algorithms[algorithm_name] = ctx
+
+    def change_algorithm(self, algorithm_name):
+        if algorithm_name in self.maze_algorithms:
+            self.settings["generation_algorithm"] = algorithm_name
+        else:
+            print(f"Algorithm {algorithm_name} not found.")
+
     # Game initialization and state management
     def start_game(self):
         if not self.validate_settings():
@@ -114,9 +152,15 @@ class Game:
         
         max_attempts = 5
         for _ in range(max_attempts):
-            self.maze = Maze(self.settings["maze_height"], self.settings["maze_width"], self.maze_generation_algorithm)
-            if self.maze.solution:
-                break
+            try:
+                js_ctx = self.maze_algorithms[self.settings["generation_algorithm"]]
+                js_maze = js_ctx.call(f"{self.settings['generation_algorithm']}Maze", self.settings["maze_width"], self.settings["maze_height"])
+                self.maze = Maze(self.settings["maze_height"], self.settings["maze_width"])
+                self.maze.grid = js_maze
+                if self.maze.solution:
+                    break
+            except Exception as e:
+                print(f"Error generating maze: {e}")
         else:
             print(f"Failed to generate a valid maze after {max_attempts} attempts. Please try again.")
             self.state = "welcome"
@@ -130,17 +174,23 @@ class Game:
         self.game_message = ""
         self.state = "playing"
         self.zombie_spawn_start_time = time.time() + self.settings["zombie_delay"]
+        self.zombies_vanquished = 0
+
+        # Don't reset sword status here
+        # self.sword_collected = False
 
         self.cell_size = TILE_SIZE
         self.offset_x = self.margin + (self.maze_area_width - self.cell_size * self.maze.cols) // 2
         self.offset_y = self.margin + (self.maze_area_height - self.cell_size * self.maze.rows) // 2
 
-        # Place the sword randomly on the map, avoiding entry and exit
-        empty_cells = [(r, c) for r in range(self.maze.rows) for c in range(self.maze.cols) 
-                       if not self.maze.is_wall(r, c) and (r, c) != self.player_position
-                       and (r, c) != self.maze.out_point]
-        self.sword_position = random.choice(empty_cells)
-        self.sword_collected = False
+        # Only place the sword if it hasn't been collected
+        if not self.sword_collected:
+            empty_cells = [(r, c) for r in range(self.maze.rows) for c in range(self.maze.cols) 
+                           if not self.maze.is_wall(r, c) and (r, c) != self.player_position
+                           and (r, c) != self.maze.out_point]
+            self.sword_position = random.choice(empty_cells)
+        else:
+            self.sword_position = None
 
         # Update zombie delay range
         self.settings["zombie_delay"] = random.uniform(1, 9)
@@ -149,6 +199,10 @@ class Game:
         self.update_valid_moves()
 
         self.calculate_maze_dimensions()
+
+        self.player = Player((self.offset_x + self.player_position[1] * self.cell_size + self.cell_size // 2,
+                              self.offset_y + self.player_position[0] * self.cell_size + self.cell_size // 2))
+        self.all_sprites = pygame.sprite.Group(self.player)
 
     def update_zombie_timer(self):
         if not self.sword_collected:
@@ -183,7 +237,7 @@ class Game:
     def draw_welcome_screen(self):
         self.screen.fill(BLACK)
 
-        title = self.title_font.render("Welcome to EscapeZombMania!", True, RED)  # Changed to RED
+        title = self.title_font.render("Welcome to EscapeZombieMazia!", True, RED)  # Changed to RED
         title_rect = title.get_rect(center=(self.screen_width // 2, 50))
         self.screen.blit(title, title_rect)
 
@@ -201,12 +255,10 @@ class Game:
 
         rules = [
             "1. Navigate through the maze to reach the exit.",
-            "2. Avoid zombies that spawn randomly.",
+            "2. Avoid zombies that spawn randomly unless you have the sword.",
             "3. Use arrow keys or click to move.",
-            "4. Zombies move at regular intervals.",
-            "5. Game ends when you reach the exit or",
-            "   get caught by zombies.",
-            "6. Score based on maze size, zombie speed,",
+            "4. Game over if caught by zombies.",
+            "5. Score based on maze size, zombie speed,",
             "   and time taken (if flooding enabled)."
         ]
 
@@ -257,9 +309,29 @@ class Game:
         flood_toggle = self.font.render("Press F to toggle", True, LIGHT_GRAY)
         self.screen.blit(flood_toggle, (controls_pane.x + 10, y + 30))
 
+        y += 70
+        algorithm_text = f"Maze Algorithm: {self.current_algorithm}"
+        algorithm_surface = self.font.render(algorithm_text, True, WHITE)
+        self.screen.blit(algorithm_surface, (controls_pane.x + 10, y))
+        algorithm_toggle = self.font.render("Press A to change", True, LIGHT_GRAY)
+        self.screen.blit(algorithm_toggle, (controls_pane.x + 10, y + 30))
+
         start_text = self.font.render("Press Enter to start with default options", True, WHITE)
         start_text_rect = start_text.get_rect(center=(self.screen_width // 2, self.screen_height - 30))
         self.screen.blit(start_text, start_text_rect)
+
+        # Add algorithm selection
+        algorithms = [
+            'recursive_division', 'backtracking', 'hunt_and_kill', 'wilsons',
+            'ellers', 'kruskals', 'aldous_broder', 'sidewinder', 'binary_tree', 'prims'
+        ]
+        algorithm_y = 400
+        for i, algorithm in enumerate(algorithms):
+            text = self.font.render(algorithm, True, WHITE)
+            rect = text.get_rect(left=50, top=algorithm_y + i * 30)
+            self.screen.blit(text, rect)
+            if algorithm == self.settings["generation_algorithm"]:
+                pygame.draw.rect(self.screen, RED, rect, 2)
 
     def draw_legend(self):
         legend_x = self.screen_width - self.legend_width
@@ -294,7 +366,8 @@ class Game:
                 f"Zombie Delay: {self.settings['zombie_delay']:.2f}s",
                 f"Zombie Speed: {'Fast' if self.settings['zombie_speed_fast'] else 'Slow'}",
                 f"Spawning: {'ON' if self.settings['zombie_spawning_enabled'] else 'OFF'}",
-                f"Sword: {'Collected' if self.sword_collected else 'Not Collected'}"
+                f"Sword: {'Collected' if self.sword_collected else 'Not Collected'}",
+                f"Zombies Vanquished: {self.zombies_vanquished}"
             ]
             for i, text in enumerate(info_text):
                 info_surface = self.font.render(text, True, BLACK)
@@ -337,18 +410,14 @@ class Game:
             self.screen.blit(pygame.transform.scale(self.sword_image, (self.cell_size, self.cell_size)), (sword_x, sword_y))
 
     def draw_player(self):
-        player_x = self.offset_x + self.player_position[1] * self.cell_size + self.cell_size // 2
-        player_y = self.offset_y + self.player_position[0] * self.cell_size + self.cell_size // 2
-        
-        # Draw player trail
-        if len(self.player_path) > 1:
-            points = [(self.offset_x + pos[1] * self.cell_size + self.cell_size // 2,
-                       self.offset_y + pos[0] * self.cell_size + self.cell_size // 2) for pos in self.player_path]
-            pygame.draw.lines(self.screen, self.trail_color, False, points, 2)
-
-        # Draw player
-        player_rect = self.current_player_image.get_rect(center=(player_x, player_y))
-        self.screen.blit(self.current_player_image, player_rect)
+        if self.player:
+            self.screen.blit(self.player.image, self.player.rect)
+            
+            # Draw player trail
+            if len(self.player_path) > 1:
+                points = [(self.offset_x + pos[1] * self.cell_size + self.cell_size // 2,
+                           self.offset_y + pos[0] * self.cell_size + self.cell_size // 2) for pos in self.player_path]
+                pygame.draw.lines(self.screen, self.trail_color, False, points, 2)
 
     def draw_score_board(self):
         # Dark background
@@ -424,6 +493,12 @@ class Game:
         elif event.key == pygame.K_f:
             self.settings["zombie_spawning_enabled"] = not self.settings["zombie_spawning_enabled"]
             self.draw_welcome_screen()  # Redraw the screen to show the updated setting
+        elif event.key == pygame.K_a:
+            algorithms = list(self.maze_algorithms.keys())
+            current_index = algorithms.index(self.current_algorithm)
+            next_index = (current_index + 1) % len(algorithms)
+            self.change_algorithm(algorithms[next_index])
+            self.draw_welcome_screen()  # Redraw the screen to show the updated algorithm
         elif event.key == pygame.K_RETURN:
             if self.validate_settings():
                 self.start_game()
@@ -520,10 +595,15 @@ class Game:
             return
         
         max_zombies = 2  # Adjust this number as needed
-        if len(self.zombies) < max_zombies:
-            new_zombie = (random.randint(0, self.maze.cols - 1), random.randint(0, self.maze.rows - 1))
-            if not self.maze.is_wall(*new_zombie) and new_zombie != self.player_position:
-                self.zombies.add(new_zombie)
+        current_zombies = len(self.zombies)
+        zombies_vanquished = self.zombies_vanquished
+        total_zombies = current_zombies + zombies_vanquished
+
+        if total_zombies < max_zombies:
+            new_pos = self.get_random_empty_position()
+            new_zombie = Zombie(new_pos)
+            self.zombies.add(new_zombie)
+            self.all_sprites.add(new_zombie)
 
     def move_zombies(self):
         new_zombies = set()
@@ -618,12 +698,23 @@ class Game:
                     self.handle_keystroke(key)
 
         if self.state == "playing":
-            if self.player_position in self.zombies and not self.sword_collected:
-                self.game_over("Game Over! You've been caught by zombies.")
+            if self.player:
+                collided_zombies = pygame.sprite.spritecollide(self.player, self.zombies, False)
+                for zombie in collided_zombies:
+                    if self.player.has_sword:
+                        self.zombies.remove(zombie)
+                        self.zombies_vanquished += 1
+                    else:
+                        self.game_over("Game Over! You've been caught by zombies.")
+                        break
             elif self.player_position == self.maze.out_point:
                 score = self.calculate_score()
                 self.game_over(f"You win! Score: {score}")
                 self.update_leaderboard(score)
+            elif self.player_position == self.sword_position:
+                self.sword_collected = True
+                self.player.collect_sword()
+                print("Sword collected! You can now defeat zombies!")
 
         self.draw()
         self.clock.tick(30)
@@ -670,10 +761,8 @@ class Game:
                     # Check if the player has collected the sword
                     if self.player_position == self.sword_position and not self.sword_collected:
                         self.sword_collected = True
-                        self.current_player_image = self.player_with_sword_image
-                        self.zombies.clear()  # Kill all zombies
-                        pygame.time.set_timer(self.ZOMBIE_UPDATE_EVENT, 0)  # Stop zombie spawning
-                        print("Sword collected! All zombies vanquished!")
+                        self.player.collect_sword()
+                        print("Sword collected! You can now defeat zombies!")
 
     def move_player(self, target_cell):
         path = self.get_path_to_cell(target_cell)
@@ -705,38 +794,3 @@ class Game:
         if self.state == "playing":
             self.spawn_zombies()
             self.move_zombies()
-            if self.player_position in self.zombies:
-                self.game_over("You were caught by zombies!")
-            elif self.player_position == self.maze.out_point:
-                score = self.calculate_score()
-                self.update_leaderboard(score)
-                self.game_over(f"You escaped! Score: {score}")
-            elif self.player_position == self.sword_position:
-                self.sword_collected = True
-                self.current_player_image = self.player_with_sword_image
-                self.zombies.clear()
-                pygame.time.set_timer(self.ZOMBIE_UPDATE_EVENT, 0)
-
-def main():
-    pygame.init()
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
-    pygame.display.set_caption("EscapeZombMania")
-    game = Game(screen)
-    
-    clock = pygame.time.Clock()
-    running = True
-    while running:
-        game.handle_events()
-        
-        if game.state == "playing":
-            game.update()
-        
-        game.draw()
-        pygame.display.flip()
-        clock.tick(30)  # Limit to 30 FPS
-
-    pygame.quit()
-    sys.exit()
-
-if __name__ == "__main__":
-    main()
