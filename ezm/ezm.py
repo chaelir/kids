@@ -21,6 +21,8 @@ TILE_SIZE = 32  # Adjust this value as needed
 MAP_WIDTH = 800
 MAP_HEIGHT = 600
 
+MAX_ZOMBIES = 10  # Adjust this number as needed
+
 class Game:
     def __init__(self, screen: pygame.Surface):
         self.screen = screen
@@ -101,6 +103,9 @@ class Game:
         self.out_color = BLUE
 
         self.calculate_maze_dimensions()
+
+        self.zombie_move_time = 0
+        self.zombie_move_delay = 1  # Adjust this value to change zombie speed (higher = slower)
 
     # Game initialization and state management
     def start_game(self):
@@ -510,22 +515,27 @@ class Game:
     def is_valid_path(self, path):
         return all(self.maze.get_valid_neighbors(cell) for cell in path)
 
-    def update_zombie_spawning(self):
+    def spawn_zombies(self):
         if not self.settings["zombie_spawning_enabled"] or time.time() < self.zombie_spawn_start_time:
             return
-        if not self.zombies:
-            self.zombies.add(self.maze.in_point)
-            return
-
-        new_zombies = set()
-        for cell in self.zombies:
-            for neighbor in self.maze.get_valid_neighbors(cell):
-                if neighbor not in self.zombies and not self.maze.is_wall(*neighbor):
-                    if random.random() < (0.1 if self.settings["zombie_speed_fast"] else 0.05):
-                        new_zombies.add(neighbor)
         
-        self.zombies.update(new_zombies)
-        self.update_valid_moves()
+        max_zombies = 2  # Adjust this number as needed
+        if len(self.zombies) < max_zombies:
+            new_zombie = (random.randint(0, self.maze.cols - 1), random.randint(0, self.maze.rows - 1))
+            if not self.maze.is_wall(*new_zombie) and new_zombie != self.player_position:
+                self.zombies.add(new_zombie)
+
+    def move_zombies(self):
+        new_zombies = set()
+        for zombie in self.zombies:
+            dx = random.choice([-1, 0, 1])
+            dy = random.choice([-1, 0, 1])
+            new_pos = (zombie[0] + dx, zombie[1] + dy)
+            if not self.maze.is_wall(*new_pos):
+                new_zombies.add(new_pos)
+            else:
+                new_zombies.add(zombie)
+        self.zombies = new_zombies
 
     def calculate_score(self):
         if not self.settings["zombie_spawning_enabled"]:
@@ -596,7 +606,9 @@ class Game:
                     self.handle_keystroke(event.key)
             elif event.type == self.ZOMBIE_UPDATE_EVENT and self.state == "playing":
                 if self.settings["zombie_spawning_enabled"]:
-                    self.update_zombie_spawning()
+                    self.spawn_zombies()
+                    self.move_zombies()
+                    self.update_valid_moves()
 
         # Handle held keys for continuous movement
         keys = pygame.key.get_pressed()
@@ -614,7 +626,7 @@ class Game:
                 self.update_leaderboard(score)
 
         self.draw()
-        self.clock.tick(60)
+        self.clock.tick(30)
 
     def handle_keystroke(self, key):
         if self.state != "playing":
@@ -691,7 +703,8 @@ class Game:
 
     def update(self):
         if self.state == "playing":
-            self.update_zombie_spawning()
+            self.spawn_zombies()
+            self.move_zombies()
             if self.player_position in self.zombies:
                 self.game_over("You were caught by zombies!")
             elif self.player_position == self.maze.out_point:
@@ -720,7 +733,7 @@ def main():
         
         game.draw()
         pygame.display.flip()
-        clock.tick(60)  # Limit to 60 FPS
+        clock.tick(30)  # Limit to 30 FPS
 
     pygame.quit()
     sys.exit()
