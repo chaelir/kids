@@ -205,7 +205,7 @@ class Game:
         self.draw_welcome_screen()
         pygame.display.flip()
 
-        self.last_zombie_spawn_time = 0
+        self.last_zombie_spawn_time = time.time()
 
     def load_leaderboard(self):
         try:
@@ -914,7 +914,10 @@ class Game:
                     (zombie.grid_position[0], zombie.grid_position[1] - 1),
                     (zombie.grid_position[0], zombie.grid_position[1] + 1)
                 ]
-                valid_moves = [move for move in possible_moves if not self.maze.is_wall(*move)]
+                valid_moves = [move for move in possible_moves 
+                               if not self.maze.is_wall(*move) 
+                               and move != self.maze.in_point 
+                               and move != self.maze.out_point]
                 
                 if valid_moves:
                     new_pos = random.choice(valid_moves)
@@ -935,7 +938,8 @@ class Game:
     def get_random_empty_position(self):
         empty_cells = [(r, c) for r in range(self.maze.rows) for c in range(self.maze.cols)
                        if self.maze.grid[r][c] == 0 and (r, c) != self.player_position
-                       and (r, c) != self.maze.out_point and (r, c) != self.sword_position]
+                       and (r, c) != self.maze.out_point and (r, c) != self.sword_position
+                       and (r, c) != self.maze.in_point]
         return random.choice(empty_cells) if empty_cells else None
 
     def calculate_score(self):
