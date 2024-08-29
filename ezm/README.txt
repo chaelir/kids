@@ -32,5 +32,13 @@ download the dir
 install the required packages
 >python3 ezm.py
 
-Demo Video:
-ezm_play.mkv
+== Demo ==
+Demo Video: ezm_play.mkv
+
+== Devel ==
+Cursor IDE
+Composer Plugin
+Git
+
+
+

@@ -222,9 +222,15 @@ class Game:
         if self.state == "welcome":
             self.draw_welcome_screen()
         elif self.state == "playing":
-            self.draw_maze()
-            self.draw_player()
-            self.draw_legend()  # Only draw the legend during gameplay
+            if self.maze:
+                self.draw_maze()
+                self.draw_player()
+            else:
+                error_text = "Maze generation failed. Press ESC to return to the welcome screen."
+                error_surface = self.font.render(error_text, True, RED)
+                error_rect = error_surface.get_rect(center=(self.screen_width // 2, self.screen_height // 2))
+                self.screen.blit(error_surface, error_rect)
+            self.draw_legend()
         elif self.state == "game_over":
             self.draw_score_board()
 
@@ -359,7 +365,7 @@ class Game:
             text_surface = self.font.render(text, True, color)
             self.screen.blit(text_surface, (legend_x + 40, legend_y + 60 + i*30))
 
-        if self.state == "playing":
+        if self.state == "playing" and self.maze:
             info_text = [
                 f"Maze Size: {self.maze.rows}x{self.maze.cols}",
                 f"Solution Length: {self.maze.get_solution_length()}",
@@ -372,6 +378,10 @@ class Game:
             for i, text in enumerate(info_text):
                 info_surface = self.font.render(text, True, BLACK)
                 self.screen.blit(info_surface, (legend_x + 10, legend_y + 240 + i * 30))
+        elif self.state == "playing":
+            error_text = "Maze generation failed. Please restart the game."
+            error_surface = self.font.render(error_text, True, RED)
+            self.screen.blit(error_surface, (legend_x + 10, legend_y + 240))
 
     def draw_maze(self):
         if not self.maze:
@@ -626,11 +636,13 @@ class Game:
             dy = random.choice([-1, 0, 1])
             new_pos = (zombie.position[0] + dx, zombie.position[1] + dy)
             if not self.maze.is_wall(*new_pos):
-                new_zombie = Zombie(new_pos)
-                new_zombies.add(new_zombie)
-            else:
-                new_zombies.add(zombie)
-        self.zombies = new_zombies
+                zombie.update(new_pos)
+
+    def get_random_empty_position(self):
+        empty_cells = [(r, c) for r in range(self.maze.rows) for c in range(self.maze.cols)
+                       if not self.maze.is_wall(r, c) and (r, c) != self.player_position
+                       and (r, c) != self.maze.out_point and (r, c) != self.sword_position]
+        return random.choice(empty_cells) if empty_cells else None
 
     def calculate_score(self):
         if not self.settings["zombie_spawning_enabled"]:
