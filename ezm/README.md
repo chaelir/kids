@@ -1,5 +1,7 @@
 # EscapeZombieMazia
 
+![EZM Go](ezm.png)
+
 EscapeZombieMazia is a maze-based game where players navigate through procedurally generated mazes while avoiding zombies and collecting items.
 
 ## Game Features
