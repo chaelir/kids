@@ -866,6 +866,22 @@ class Game:
         self.title_font = pygame.font.Font(None, int(min(self.screen_width, self.screen_height) * 0.05))
         self.calculate_maze_dimensions()
 
+if __name__ == "__main__":
+    pygame.init()
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
+    pygame.display.set_caption("EscapeZombieMazia")
+
+    game = Game(screen)
+    running = True
+    while running:
+        if game.state == "playing":
+            running = game.update_gameplay()
+        else:
+            running = game.update_static_screen()
+
+    pygame.quit()
+    sys.exit()
+
     # Helper methods
     def round_to_odd(self, value, min_value, max_value):
         return max(min_value, min(max_value, value + (value % 2 - 1)))
