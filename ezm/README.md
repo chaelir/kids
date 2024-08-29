@@ -1,38 +1,75 @@
-# EscapeZombieMazia!
+# EscapeZombieMazia
 
-## Windows
+EscapeZombieMazia is a maze-based game where players navigate through procedurally generated mazes while avoiding zombies and collecting items.
 
-### Required Packages:
-- Python (download and install)
-- Python pip (download and run `py get-pip.py`)
-- Python pygame (`pip install pygame`)
-- Python PyExecJS (`pip install PyExecJS`)
-- Python dotenv (`pip install python-dotenv`)
-- NodeJS (download and install)
+## Game Features
 
-### To Play:
-1. Install the required packages
-2. Download the code directory
-3. Run `py ezm.py`
+- Multiple maze generation algorithms
+- Zombie enemies that spawn and move randomly
+- Collectible sword to defeat zombies
+- Customizable game settings
+- Leaderboard system
 
-## WSL (Windows Subsystem for Linux)
+## Similar Games
 
-### Required Packages:
-- Python (`apt install python3`)
-- Python pip (`apt install python3-pip`)
-- Python pygame (`pip install pygame`)
-- Python PyExecJS (`pip install PyExecJS`)
-- NodeJS (`apt install nodejs`)
+EscapeZombieMazia shares similarities with various maze and dungeon-crawling games:
 
-### To Play:
-1. Download the directory
-2. Install the required packages
-3. Run `python3 ezm.py`
+1. Pac-Man: While not exactly the same, it involves navigating a maze while avoiding enemies.
 
-## Demo
-Demo Video: ezm_play.mkv
+2. Maze Runner games: These often involve solving a maze with various obstacles or enemies.
 
-## Development
-- Cursor IDE
-- Composer Plugin
-- Git
+3. Dungeon crawlers: Many roguelike games feature maze-like levels with enemies and items to collect.
+
+4. Educational maze games: Used to teach problem-solving skills, often with simpler graphics.
+
+5. 3D maze games: More immersive versions that put the player in a first-person perspective.
+
+6. Procedurally generated maze games: Similar to this implementation, where mazes are created algorithmically.
+
+7. Multiplayer maze games: Where players compete to solve mazes or catch each other.
+
+EscapeZombieMazia combines elements from several of these, such as:
+- Procedural maze generation
+- Enemy avoidance (zombies)
+- Item collection (sword)
+- Multiple algorithms for maze creation
+
+This combination makes the game unique while still being familiar to players who enjoy maze-based challenges. The addition of different maze generation algorithms as a selectable feature is particularly interesting and educational.
+
+## Getting Started
+
+To get started with EscapeZombieMazia:
+
+1. Ensure you have Python 3.x installed on your system.
+2. Clone this repository:
+   ```
+   git clone https://github.com/yourusername/EscapeZombieMazia.git
+   ```
+3. Navigate to the project directory:
+   ```
+   cd EscapeZombieMazia
+   ```
+4. Install the required dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
+5. Run the game:
+   ```
+   python ezm/ezm.py
+   ```
+
+## Contributing
+
+We welcome contributions to EscapeZombieMazia! Here's how you can contribute:
+
+1. Fork the repository on GitHub.
+2. Create a new branch for your feature or bug fix.
+3. Make your changes and commit them with clear, descriptive messages.
+4. Push your changes to your fork.
+5. Submit a pull request to the main repository.
+
+Please ensure your code adheres to the project's coding standards and include tests for new features.
+
+## License
+
+EscapeZombieMazia is released under the MIT License. See the LICENSE file for more details.
