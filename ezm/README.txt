@@ -8,7 +8,8 @@ Required Packages:
 Python             # download and install
 Python pip         # download and > py get-pip.py
 Python pygame      > pip install pygame
-Python PyExecJS    > pip install PyExecJS 
+Python PyExecJS    > pip install PyExecJS
+Python dotenv      > pip install python-dotenv
 NodeJS             # download and install
 
 To Play:
