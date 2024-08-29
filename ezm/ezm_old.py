@@ -36,13 +36,13 @@ class Game:
         self.leaderboard = self.load_leaderboard()
         self.maze = None
         self.player_position = None
-        self.zombies = set()
+        self.zombie_flood = set()
         self.player_path = []
         self.tentative_path = []
         self.valid_moves = set()
         self.game_finished = False
         self.game_message = ""
-        self.zombie_spawn_start_time = None
+        self.zombie_flood_start_time = None
 
         pygame.font.init()
         self.font = pygame.font.Font(None, 24)
@@ -56,7 +56,7 @@ class Game:
             "maze_height": 29,
             "zombie_delay": 5,
             "zombie_speed_fast": True,  # Default to True
-            "zombie_spawning_enabled": True  # Default to True
+            "zombie_flooding_enabled": True  # Default to True
         }
         self.player_name = "CX"  # Set default name to CX
         self.input_boxes = {
@@ -118,13 +118,13 @@ class Game:
             return
 
         self.player_position = self.maze.in_point
-        self.zombies = set()
+        self.zombie_flood = set()
         self.player_path = []
         self.tentative_path = []
         self.game_finished = False
         self.game_message = ""
         self.state = "playing"
-        self.zombie_spawn_start_time = time.time() + self.settings["zombie_delay"]
+        self.zombie_flood_start_time = time.time() + self.settings["zombie_delay"]
 
         self.cell_size = TILE_SIZE
         self.offset_x = self.margin + (self.maze_area_width - self.cell_size * self.maze.cols) // 2
@@ -196,7 +196,7 @@ class Game:
 
         rules = [
             "1. Navigate through the maze to reach the exit.",
-            "2. Avoid zombies that spawn randomly.",
+            "2. Avoid zombies that flood the maze.",
             "3. Use arrow keys or click to move.",
             "4. Zombies move at regular intervals.",
             "5. Game ends when you reach the exit or",
@@ -246,7 +246,7 @@ class Game:
         self.screen.blit(speed_toggle, (controls_pane.x + 10, y + 30))
 
         y += 70
-        flood_text = f"Zombie Spawning: {'ON' if self.settings['zombie_spawning_enabled'] else 'OFF'}"
+        flood_text = f"Zombie Flooding: {'ON' if self.settings['zombie_flooding_enabled'] else 'OFF'}"
         flood_surface = self.font.render(flood_text, True, WHITE)
         self.screen.blit(flood_surface, (controls_pane.x + 10, y))
         flood_toggle = self.font.render("Press F to toggle", True, LIGHT_GRAY)
@@ -288,7 +288,7 @@ class Game:
                 f"Solution Length: {self.maze.get_solution_length()}",
                 f"Zombie Delay: {self.settings['zombie_delay']:.2f}s",
                 f"Zombie Speed: {'Fast' if self.settings['zombie_speed_fast'] else 'Slow'}",
-                f"Spawning: {'ON' if self.settings['zombie_spawning_enabled'] else 'OFF'}",
+                f"Flooding: {'ON' if self.settings['zombie_flooding_enabled'] else 'OFF'}",
                 f"Sword: {'Collected' if self.sword_collected else 'Not Collected'}"
             ]
             for i, text in enumerate(info_text):
@@ -310,7 +310,7 @@ class Game:
 
                 if self.maze.is_wall(row, col):
                     pygame.draw.rect(self.screen, BLACK, cell_rect)
-                if (row, col) in self.zombies:
+                if (row, col) in self.zombie_flood:
                     self.screen.blit(self.zombie_image, (x, y))
 
         # Draw IN point
@@ -417,7 +417,7 @@ class Game:
             self.settings["zombie_speed_fast"] = not self.settings["zombie_speed_fast"]
             self.draw_welcome_screen()  # Redraw the screen to show the updated setting
         elif event.key == pygame.K_f:
-            self.settings["zombie_spawning_enabled"] = not self.settings["zombie_spawning_enabled"]
+            self.settings["zombie_flooding_enabled"] = not self.settings["zombie_flooding_enabled"]
             self.draw_welcome_screen()  # Redraw the screen to show the updated setting
         elif event.key == pygame.K_RETURN:
             if self.validate_settings():
@@ -450,7 +450,7 @@ class Game:
     def replay_game(self):
         # Reset game state
         self.player_position = None
-        self.zombies = set()
+        self.zombie_flood = set()
         self.player_path = []
         self.tentative_path = []
         self.game_finished = False
@@ -510,25 +510,25 @@ class Game:
     def is_valid_path(self, path):
         return all(self.maze.get_valid_neighbors(cell) for cell in path)
 
-    def update_zombie_spawning(self):
-        if not self.settings["zombie_spawning_enabled"] or time.time() < self.zombie_spawn_start_time:
+    def update_zombie_flood(self):
+        if not self.settings["zombie_flooding_enabled"] or time.time() < self.zombie_flood_start_time:
             return
-        if not self.zombies:
-            self.zombies.add(self.maze.in_point)
+        if not self.zombie_flood:
+            self.zombie_flood.add(self.maze.in_point)
             return
 
-        new_zombies = set()
-        for cell in self.zombies:
+        new_cells = set()
+        for cell in self.zombie_flood:
             for neighbor in self.maze.get_valid_neighbors(cell):
-                if neighbor not in self.zombies and not self.maze.is_wall(*neighbor):
+                if neighbor not in self.zombie_flood and not self.maze.is_wall(*neighbor):
                     if random.random() < (0.1 if self.settings["zombie_speed_fast"] else 0.05):
-                        new_zombies.add(neighbor)
+                        new_cells.add(neighbor)
         
-        self.zombies.update(new_zombies)
+        self.zombie_flood.update(new_cells)
         self.update_valid_moves()
 
     def calculate_score(self):
-        if not self.settings["zombie_spawning_enabled"]:
+        if not self.settings["zombie_flooding_enabled"]:
             return 0
         
         maze_difficulty = self.maze.rows * self.maze.cols
@@ -595,8 +595,9 @@ class Game:
                 elif self.state == "playing":
                     self.handle_keystroke(event.key)
             elif event.type == self.ZOMBIE_UPDATE_EVENT and self.state == "playing":
-                if self.settings["zombie_spawning_enabled"]:
-                    self.update_zombie_spawning()
+                if self.settings["zombie_flooding_enabled"]:
+                    self.update_zombie_flood()
+                    self.update_valid_moves()
 
         # Handle held keys for continuous movement
         keys = pygame.key.get_pressed()
@@ -606,7 +607,7 @@ class Game:
                     self.handle_keystroke(key)
 
         if self.state == "playing":
-            if self.player_position in self.zombies and not self.sword_collected:
+            if self.player_position in self.zombie_flood and not self.sword_collected:
                 self.game_over("Game Over! You've been caught by zombies.")
             elif self.player_position == self.maze.out_point:
                 score = self.calculate_score()
@@ -659,7 +660,7 @@ class Game:
                     if self.player_position == self.sword_position and not self.sword_collected:
                         self.sword_collected = True
                         self.current_player_image = self.player_with_sword_image
-                        self.zombies.clear()  # Kill all zombies
+                        self.zombie_flood.clear()  # Kill all zombies
                         pygame.time.set_timer(self.ZOMBIE_UPDATE_EVENT, 0)  # Stop zombie spawning
                         print("Sword collected! All zombies vanquished!")
 
@@ -691,8 +692,8 @@ class Game:
 
     def update(self):
         if self.state == "playing":
-            self.update_zombie_spawning()
-            if self.player_position in self.zombies:
+            self.update_zombie_flood()
+            if self.player_position in self.zombie_flood:
                 self.game_over("You were caught by zombies!")
             elif self.player_position == self.maze.out_point:
                 score = self.calculate_score()
@@ -701,7 +702,7 @@ class Game:
             elif self.player_position == self.sword_position:
                 self.sword_collected = True
                 self.current_player_image = self.player_with_sword_image
-                self.zombies.clear()
+                self.zombie_flood.clear()
                 pygame.time.set_timer(self.ZOMBIE_UPDATE_EVENT, 0)
 
 def main():
