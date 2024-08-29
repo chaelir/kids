@@ -140,14 +140,14 @@ class Game:
             "show_trail": False,
             "show_solution": False
         }
-        self.player = DEFAULT_PLAYER_NAME if DEFAULT_PLAYER_NAME else "Mario"  # Ensure it's not empty
+        self.player_name = DEFAULT_PLAYER_NAME
         self.input_boxes = {
             "player": pygame.Rect(0, 0, 200, 32),
             "maze_width": pygame.Rect(0, 0, 60, 32),
             "maze_height": pygame.Rect(0, 0, 60, 32),
             "zombie_delay": pygame.Rect(0, 0, 60, 32)
         }
-        self.active_input = None
+        self.active_input = "player"  # Set initial active input to player name
 
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
 
@@ -185,10 +185,9 @@ class Game:
         self.zombie_move_time = 0
         self.zombie_move_delay = 1  # Adjust this value to change zombie speed (higher = slower)
 
+        self.maze_algorithms = {}
         self.load_maze_algorithms()
         self.current_algorithm = 'backtracking'  # Default algorithm
-
-        self.player = None  # Initialize to None, will be created in start_game
 
         self.show_trail = False  # Changed from True to False
         self.show_solution = False
@@ -210,8 +209,18 @@ class Game:
         self.player_with_sword_welcome_image = pygame.transform.scale(self.player_with_sword_welcome_image, welcome_image_size)
         self.zombie_welcome_image = pygame.transform.scale(self.zombie_welcome_image, welcome_image_size)
 
+        # Draw the welcome screen immediately
+        self.draw_welcome_screen()
+        pygame.display.flip()
+
+    def load_leaderboard(self):
+        try:
+            with open('leaderboard.json', 'r') as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return []
+
     def load_maze_algorithms(self):
-        self.maze_algorithms = {}
         current_dir = os.path.dirname(os.path.abspath(__file__))
         algorithm_dir = os.path.join(current_dir, "mazeai")
         print(f"Searching for algorithms in directory: {algorithm_dir}")
@@ -276,6 +285,7 @@ class Game:
             self.sword_collected = False  # Reset sword collection status
             print(f"Sword spawned at {self.sword_position}")
             self.update_zombie_timer()
+            self.player_sprite = Player(self.player_position)
         else:
             print("Maze generation failed. Returning to welcome screen.")
             self.state = "welcome"
@@ -428,11 +438,14 @@ class Game:
             
             input_box = self.input_boxes[setting]
             input_box.topleft = (controls_pane.x + 180, y - 5)
-            pygame.draw.rect(self.screen, WHITE if self.active_input == setting else LIGHT_GRAY, input_box, 2)
+            if self.active_input == setting:
+                pygame.draw.rect(self.screen, YELLOW, input_box, 2)  # Use YELLOW for active input
+            else:
+                pygame.draw.rect(self.screen, LIGHT_GRAY, input_box, 2)
             
             # Display the current value in the input box
             if setting == "player":
-                value = self.player if self.player else "Mario"  # Use "Mario" if player name is empty
+                value = self.player_name if self.player_name else ""
             elif setting == "zombie_delay":
                 value = f"{self.settings.get(setting, 0):.1f}"
             else:
@@ -483,6 +496,10 @@ class Game:
         start_rect = start_text.get_rect(center=(self.screen_width // 2, self.screen_height - 30))
         pygame.draw.rect(self.screen, GREEN, start_rect.inflate(20, 10))
         self.screen.blit(start_text, start_rect)
+
+        # Add this print statement at the end of the method
+        print(f"End of draw_welcome_screen. Active input is: {self.active_input}")
+        print(f"Current player name: {self.player_name}")
 
     def draw_legend(self):
         legend_x = self.screen_width - self.legend_width
@@ -692,6 +709,7 @@ class Game:
             if self.validate_settings():
                 print("Starting game...")
                 self.start_game()
+                self.state = "playing"  # Immediately change the state
                 print(f"Game started. New state: {self.state}")
             else:
                 print("Invalid settings. Please check and try again.")
@@ -719,34 +737,46 @@ class Game:
             next_index = (current_index + 1) % len(algorithms)
             self.settings["generation_algorithm"] = algorithms[next_index]
             print(f"Changed algorithm to: {self.settings['generation_algorithm']}")
-        elif self.active_input:
-            if event.key == pygame.K_BACKSPACE:
-                if self.active_input == "player":
-                    self.player = self.player[:-1] if len(self.player) > 1 else "Mario"
-                elif self.active_input in ["maze_width", "maze_height"]:
-                    current_value = str(self.settings[self.active_input])
-                    new_value = current_value[:-1] if len(current_value) > 1 else str(MIN_MAZE_WIDTH)
+        elif event.key == pygame.K_BACKSPACE:
+            if self.active_input == "player":
+                self.player_name = self.player_name[:-1]
+                print(f"Backspace in player: {self.player_name}")
+            elif self.active_input in ["maze_width", "maze_height"]:
+                current_value = str(self.settings[self.active_input])
+                if len(current_value) > 1:
+                    new_value = current_value[:-1]
                     self.settings[self.active_input] = max(MIN_MAZE_WIDTH, int(new_value))
-                elif self.active_input == "zombie_delay":
-                    current_value = str(self.settings[self.active_input])
-                    new_value = current_value[:-1] if len(current_value) > 1 else str(MIN_ZOMBIE_DELAY)
+                else:
+                    self.settings[self.active_input] = MIN_MAZE_WIDTH
+                print(f"Backspace in {self.active_input}: {self.settings[self.active_input]}")
+            elif self.active_input == "zombie_delay":
+                current_value = str(self.settings[self.active_input])
+                if len(current_value) > 1:
+                    new_value = current_value[:-1]
                     self.settings[self.active_input] = max(MIN_ZOMBIE_DELAY, float(new_value))
-                print(f"Backspace in {self.active_input}: {self.player if self.active_input == 'player' else self.settings[self.active_input]}")
-            elif event.unicode.isprintable():
-                if self.active_input == "player":
-                    self.player += event.unicode
-                elif self.active_input in ["maze_width", "maze_height"]:
-                    current_value = str(self.settings[self.active_input])
-                    new_value = current_value + event.unicode
-                    if new_value.isdigit():
-                        self.settings[self.active_input] = min(int(new_value), MAX_MAZE_WIDTH)
-                elif self.active_input == "zombie_delay":
-                    current_value = str(self.settings[self.active_input])
-                    new_value = current_value + event.unicode
-                    if new_value.replace('.', '', 1).isdigit():
-                        self.settings[self.active_input] = min(float(new_value), MAX_ZOMBIE_DELAY)
-                print(f"Input in {self.active_input}: {self.player if self.active_input == 'player' else self.settings[self.active_input]}")
+                else:
+                    self.settings[self.active_input] = MIN_ZOMBIE_DELAY
+                print(f"Backspace in {self.active_input}: {self.settings[self.active_input]}")
+        elif event.unicode.isprintable():
+            if self.active_input == "player":
+                self.player_name += event.unicode
+                print(f"Input in player: {self.player_name}")
+            elif self.active_input in ["maze_width", "maze_height"]:
+                current_value = str(self.settings[self.active_input])
+                new_value = current_value + event.unicode
+                if new_value.isdigit():
+                    self.settings[self.active_input] = min(int(new_value), MAX_MAZE_WIDTH)
+            elif self.active_input == "zombie_delay":
+                current_value = str(self.settings[self.active_input])
+                new_value = current_value + event.unicode
+                if new_value.replace('.', '', 1).isdigit():
+                    self.settings[self.active_input] = min(float(new_value), MAX_ZOMBIE_DELAY)
+            print(f"Input in {self.active_input}: {self.player_name if self.active_input == 'player' else self.settings[self.active_input]}")
 
+        print(f"End of handle_welcome_keydown. Active input is now: {self.active_input}")
+        print(f"Current player name: {self.player_name}")
+
+        # Redraw the welcome screen after each keypress
         self.draw_welcome_screen()
         pygame.display.flip()
 
@@ -779,6 +809,78 @@ class Game:
         # Start a new game with the same settings
         self.start_game()
         print(f"Game replayed. New state: {self.state}")
+
+    def update_gameplay(self):
+        events = pygame.event.get()
+        for event in events:
+            if event.type == pygame.QUIT:
+                return False
+            elif event.type == pygame.KEYDOWN:
+                self.handle_keystroke(event.key)
+
+        self.spawn_zombies()
+        self.move_zombies()
+        dt = self.clock.get_time() / 1000
+        for zombie in self.zombies:
+            zombie.update(dt)
+
+        self.draw()
+        pygame.display.flip()
+        self.clock.tick(60)
+        return True
+
+    def update_static_screen(self):
+        events = pygame.event.get()
+        redraw_needed = False
+        for event in events:
+            if event.type == pygame.QUIT:
+                return False
+            elif event.type == pygame.KEYDOWN:
+                if self.state == "welcome":
+                    self.handle_welcome_keydown(event)
+                    redraw_needed = True
+                elif self.state == "game_over":
+                    self.handle_game_over_keydown(event)
+                    redraw_needed = True
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if self.state == "welcome":
+                    self.handle_welcome_click(event.pos)
+                    redraw_needed = True
+
+        if redraw_needed:
+            self.draw()
+            pygame.display.flip()
+
+        self.clock.tick(30)
+        return True
+
+    def handle_resize(self, size):
+        self.screen_width, self.screen_height = size
+        self.margin = int(min(self.screen_width, self.screen_height) * 0.02)
+        self.legend_width = int(self.screen_width * 0.2)
+        self.maze_area_width = self.screen_width - 2 * self.margin - self.legend_width
+        self.maze_area_height = self.screen_height - 2 * self.margin
+        self.offset_x = self.margin
+        self.offset_y = self.margin
+        self.font = pygame.font.Font(None, int(min(self.screen_width, self.screen_height) * 0.03))
+        self.title_font = pygame.font.Font(None, int(min(self.screen_width, self.screen_height) * 0.05))
+        self.calculate_maze_dimensions()
+
+if __name__ == "__main__":
+    pygame.init()
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
+    pygame.display.set_caption("EscapeZombieMazia")
+
+    game = Game(screen)
+    running = True
+    while running:
+        if game.state == "playing":
+            running = game.update_gameplay()
+        else:
+            running = game.update_static_screen()
+
+    pygame.quit()
+    sys.exit()
 
     # Helper methods
     def round_to_odd(self, value, min_value, max_value):
@@ -862,7 +964,7 @@ class Game:
         return int(maze_difficulty * zombie_time_factor * speed_factor)
 
     def validate_settings(self):
-        if not self.player or not self.player.strip():
+        if not self.player_name or not self.player_name.strip():
             print("Please enter a valid player name.")
             return False
         if not (MIN_MAZE_WIDTH <= self.settings["maze_width"] <= MAX_MAZE_WIDTH):
@@ -878,7 +980,7 @@ class Game:
 
     # Leaderboard methods
     def update_leaderboard(self, score):
-        self.leaderboard.append((self.player, score))
+        self.leaderboard.append((self.player_name, score))
         self.leaderboard.sort(key=lambda x: x[1], reverse=True)
         self.leaderboard = self.leaderboard[:10]
         self.save_leaderboard()
@@ -914,61 +1016,18 @@ class Game:
 
     # Main game loop
     def handle_events(self):
-        for event in pygame.event.get():
+        events = pygame.event.get()
+        for event in events:
             if event.type == pygame.QUIT:
                 print("Quit event detected")
                 return False
-            elif event.type == pygame.VIDEORESIZE:
-                print("Video resize event detected")
-                self.handle_resize(event.size)
             elif event.type == pygame.KEYDOWN:
-                print(f"Current state: {self.state}")
                 if self.state == "welcome":
-                    print(f"Keydown event detected: {pygame.key.name(event.key)}")
-                if event.key == pygame.K_ESCAPE:
-                    if self.state == "playing" or self.state == "game_over":
-                        print("Changing state to welcome")
-                        self.state = "welcome"
-                        self.draw_welcome_screen()
-                    else:
-                        print("Exiting game")
-                        return False
-                elif self.state == "welcome":
-                    print("Calling handle_welcome_keydown")
                     self.handle_welcome_keydown(event)
                 elif self.state == "playing":
-                    print("Calling handle_keystroke")
                     self.handle_keystroke(event.key)
                 elif self.state == "game_over":
-                    if event.key == pygame.K_RETURN:
-                        print("Replaying game")
-                        self.replay_game()
-                    elif event.key == pygame.K_ESCAPE:
-                        print("Changing state to welcome")
-                        self.state = "welcome"
-                        self.draw_welcome_screen()
-
-        # Handle held keys for continuous movement only in playing state
-        if self.state == "playing":
-            keys = pygame.key.get_pressed()
-            for key in [pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT]:
-                if keys[key]:
-                    print(f"Continuous movement: {pygame.key.name(key)}")
-                    self.handle_keystroke(key)
-
-        # Check game state
-        if self.state == "playing" and self.maze:
-            if self.player_position == self.maze.out_point:
-                score = self.calculate_score()
-                print(f"Player reached the exit. Score: {score}")
-                self.game_over(f"You win! Score: {score}")
-                self.update_leaderboard(score)
-            elif self.player_position == self.sword_position:
-                print("Player collected the sword")
-                self.sword_collected = True
-
-        self.draw()
-        self.clock.tick(60)
+                    self.handle_game_over_keydown(event)
         return True
 
     def handle_welcome_keydown(self, event):
@@ -977,6 +1036,7 @@ class Game:
             if self.validate_settings():
                 print("Starting game...")
                 self.start_game()
+                self.state = "playing"  # Immediately change the state
                 print(f"Game started. New state: {self.state}")
             else:
                 print("Invalid settings. Please check and try again.")
@@ -1004,36 +1064,36 @@ class Game:
             next_index = (current_index + 1) % len(algorithms)
             self.settings["generation_algorithm"] = algorithms[next_index]
             print(f"Changed algorithm to: {self.settings['generation_algorithm']}")
-        elif self.active_input:
-            if event.key == pygame.K_BACKSPACE:
-                if self.active_input == "player":
-                    self.player = self.player[:-1] if len(self.player) > 1 else "Mario"
-                elif self.active_input in ["maze_width", "maze_height"]:
-                    current_value = str(self.settings[self.active_input])
-                    new_value = current_value[:-1] if len(current_value) > 1 else str(MIN_MAZE_WIDTH)
-                    self.settings[self.active_input] = max(MIN_MAZE_WIDTH, int(new_value))
-                elif self.active_input == "zombie_delay":
-                    current_value = str(self.settings[self.active_input])
-                    new_value = current_value[:-1] if len(current_value) > 1 else str(MIN_ZOMBIE_DELAY)
-                    self.settings[self.active_input] = max(MIN_ZOMBIE_DELAY, float(new_value))
-                print(f"Backspace in {self.active_input}: {self.player if self.active_input == 'player' else self.settings[self.active_input]}")
-            elif event.unicode.isprintable():
-                if self.active_input == "player":
-                    self.player += event.unicode
-                elif self.active_input in ["maze_width", "maze_height"]:
-                    current_value = str(self.settings[self.active_input])
-                    new_value = current_value + event.unicode
+        elif event.key == pygame.K_BACKSPACE:
+            if self.active_input == "player":
+                self.player_name = self.player_name[:-1]
+            elif self.active_input in ["maze_width", "maze_height", "zombie_delay"]:
+                current_value = str(self.settings[self.active_input])
+                self.settings[self.active_input] = current_value[:-1]
+        elif event.unicode.isprintable():
+            if self.active_input == "player":
+                self.player_name += event.unicode
+            elif self.active_input in ["maze_width", "maze_height", "zombie_delay"]:
+                current_value = str(self.settings[self.active_input])
+                new_value = current_value + event.unicode
+                if self.active_input in ["maze_width", "maze_height"]:
                     if new_value.isdigit():
                         self.settings[self.active_input] = min(int(new_value), MAX_MAZE_WIDTH)
                 elif self.active_input == "zombie_delay":
-                    current_value = str(self.settings[self.active_input])
-                    new_value = current_value + event.unicode
                     if new_value.replace('.', '', 1).isdigit():
                         self.settings[self.active_input] = min(float(new_value), MAX_ZOMBIE_DELAY)
-                print(f"Input in {self.active_input}: {self.player if self.active_input == 'player' else self.settings[self.active_input]}")
 
+        print(f"After input processing:")
+        print(f"Active input: {self.active_input}")
+        print(f"Player name: {self.player_name}")
+        print(f"Settings: {self.settings}")
+
+        # Redraw the welcome screen to reflect changes
         self.draw_welcome_screen()
         pygame.display.flip()
+
+        print(f"End of handle_welcome_keydown. Active input is now: {self.active_input}")
+        print(f"Current player name: {self.player_name}")
 
     def handle_keystroke(self, key):
         print(f"Keystroke in playing state: {pygame.key.name(key)}")
@@ -1091,7 +1151,7 @@ class Game:
 
     def check_zombie_collisions(self):
         for zombie in self.zombies:
-            if zombie.position == self.player_position:
+            if zombie.grid_position == self.player_position:
                 if self.sword_collected:
                     self.zombies.remove(zombie)
                     self.zombies_vanquished += 1
@@ -1099,19 +1159,63 @@ class Game:
                     self.game_over("Game over! You were caught by a zombie.")
                     return
 
+    def handle_game_over_keydown(self, event):
+        if event.key == pygame.K_RETURN:
+            print("Replaying game")
+            self.replay_game()
+        elif event.key == pygame.K_ESCAPE:
+            print("Changing state to welcome")
+            self.state = "welcome"
+            print(f"State changed to: {self.state}")
+            self.draw_welcome_screen()
+        elif event.key == pygame.K_TAB:
+            # Cycle through input boxes
+            input_boxes = list(self.input_boxes.keys())
+            current_index = input_boxes.index(self.active_input) if self.active_input else -1
+            self.active_input = input_boxes[(current_index + 1) % len(input_boxes)]
+            print(f"Active input changed to: {self.active_input}")
+        return True
+
     def update(self):
-        if not self.handle_events():
-            print("handle_events returned False, exiting game")
-            return False
-        
+        events = pygame.event.get()
+        redraw_needed = False
+
+        for event in events:
+            if event.type == pygame.QUIT:
+                print("Quit event detected")
+                return False
+            elif event.type == pygame.KEYDOWN:
+                if self.state == "welcome":
+                    self.handle_welcome_keydown(event)
+                    redraw_needed = True
+                elif self.state == "playing":
+                    self.handle_keystroke(event.key)
+                    redraw_needed = True
+                elif self.state == "game_over":
+                    self.handle_game_over_keydown(event)
+                    redraw_needed = True
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if self.state == "welcome":
+                    self.handle_welcome_click(event.pos)
+                    redraw_needed = True
+
         if self.state == "playing" and self.maze:
             self.spawn_zombies()
             self.move_zombies()
             dt = self.clock.get_time() / 1000
             for zombie in self.zombies:
                 zombie.update(dt)
+            redraw_needed = True
 
-        pygame.display.flip()
+        if redraw_needed:
+            self.draw()
+            pygame.display.flip()
+
+        self.clock.tick(60)  # Limit the frame rate to 60 FPS
+
+        if redraw_needed:
+            print(f"Current state: {self.state}, Active input: {self.active_input}, Player name: {self.player_name}")
+
         return True
 
 if __name__ == "__main__":
@@ -1122,7 +1226,10 @@ if __name__ == "__main__":
     game = Game(screen)
     running = True
     while running:
-        running = game.update()
+        if game.state == "playing":
+            running = game.update_gameplay()
+        else:
+            running = game.update_static_screen()
 
     pygame.quit()
     sys.exit()

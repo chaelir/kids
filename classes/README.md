@@ -151,6 +151,12 @@ I found Cursor Composer's shortcuts and keymapping can sometimes be unintuitive 
 
 7. AI coding not working well with designing complex game controls. handling dependencies of all types of states change are still immature.
 
+8. Symbols can get undefined or uninitialized errors, Q "check symbol consistencies and address all undefined or uninitialized symbols" after trunk code changes.
+
+9. every time clear the terminal window
+
+10. define which framework to use at the inital composer is very important
+
 ## Other Known problems of the tools
 
 1. Memory limit errors: Composer may fail with a "PHP Fatal error: Allowed memory size exhausted" message. This can be resolved by increasing the PHP memory limit [1][2].
