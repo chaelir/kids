@@ -1,15 +1,32 @@
 EscapeZombieMania!
 
+Windows (version stuck):
+
 Required Packages:
-Python
-Python pygame
-Python execjs
-Javascript Runtime
+Python             # download
+Python pip         # download and > py get-pip.py
+Python pygame      > pip install pygame
+Python PyExecJS    > pip install PyExecJS 
+NodeJS             # download
 
 To Play:
 download the dir
 install the required packages
-python ezm.py
+>py ezm.py
+
+WSL:
+
+Required Packages:
+Python             > apt install python3
+Python pip         > apt install python3-pip
+Python pygame      > pip install pygame
+Python PyExecJS    > pip install PyExecJS 
+NodeJS             > apt install nodejs
+
+To Play:
+download the dir
+install the required packages
+>python3 ezm.py
 
 Demo Video:
 ezm_play.mkv
