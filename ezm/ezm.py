@@ -10,7 +10,7 @@ import execjs
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
-load_dotenv('emz.env')
+load_dotenv('ezm.env')
 
 # Update the getenv function to use os.getenv directly
 def getenv(key, default):
