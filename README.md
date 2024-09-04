@@ -18,3 +18,6 @@
 Host github.com
         IdentityFile ~/.ssh/id_github
 ``
+
+git clone git@github.com:chaelir/kids.git
+
