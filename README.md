@@ -4,8 +4,12 @@
 
 # VS Code #
 
-*System Installer* https://code.visualstudio.com/docs/?dv=win64
+*System Installer* [https://code.visualstudio.com/docs/?dv=win64](https://code.visualstudio.com/docs/?dv=win64)
 
 # Cursor IDE #
 
-*Download* https://www.cursor.com/features
+*Download and Install* [https://www.cursor.com/features](https://www.cursor.com/features)
+
+# Git #
+
+*Download* [https://www.cursor.com/features](https://git-scm.com/download/win)
