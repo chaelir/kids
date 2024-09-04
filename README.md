@@ -13,3 +13,8 @@
 # Git #
 
 *Download* [https://www.cursor.com/features](https://git-scm.com/download/win)
+
+``
+Host github.com
+        IdentityFile ~/.ssh/id_github
+``
