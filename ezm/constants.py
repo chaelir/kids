@@ -25,8 +25,8 @@ MIN_MAZE_HEIGHT = parse_int(getenv('MIN_MAZE_HEIGHT', '9'), 9)
 MAX_MAZE_HEIGHT = parse_int(getenv('MAX_MAZE_HEIGHT', '99'), 99)
 MIN_MAZE_WIDTH = parse_int(getenv('MIN_MAZE_WIDTH', '9'), 9)
 MAX_MAZE_WIDTH = parse_int(getenv('MAX_MAZE_WIDTH', '99'), 99)
-MAZE_WIDTH = parse_int(getenv('DEFAULT_MAZE_WIDTH', '9'), 9)
-MAZE_HEIGHT = parse_int(getenv('DEFAULT_MAZE_HEIGHT', '9'), 9)
+MAZE_WIDTH = parse_int(getenv('DEFAULT_MAZE_WIDTH', '19'), 19)
+MAZE_HEIGHT = parse_int(getenv('DEFAULT_MAZE_HEIGHT', '19'), 19)
 
 # Zombie settings
 MIN_ZOMBIE_DELAY = parse_int(getenv('MIN_ZOMBIE_DELAY', '1'), 1)

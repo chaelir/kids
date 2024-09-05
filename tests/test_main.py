@@ -51,25 +51,26 @@ class TestPlayer(unittest.TestCase):
         self.player = Player((0, 0))
 
     def test_player_initialization(self):
-        self.assertEqual(self.player.grid_position, (0, 0))
+        self.assertEqual(self.player.rect.center, (0, 0))
         self.assertEqual(self.player.rect.size, (PLAYER_SIZE, PLAYER_SIZE))
         self.assertFalse(self.player.has_sword)
 
     def test_player_move(self):
-        self.player.move((1, 0))
-        self.assertEqual(self.player.grid_position, (1, 0))
+        initial_pos = self.player.rect.center
+        self.player.move(1, 0)
+        self.assertEqual(self.player.rect.center, (initial_pos[0] + PLAYER_SPEED, initial_pos[1]))
 
-    def test_player_pickup_sword(self):
-        self.player.pickup_sword()
+    def test_player_collect_sword(self):
+        self.player.collect_sword()
         self.assertTrue(self.player.has_sword)
 
 class TestMaze(unittest.TestCase):
     def setUp(self):
-        self.maze = Maze(10, 10)
+        self.maze = Maze(9, 9)  # This will create a 9x9 maze
 
     def test_maze_initialization(self):
-        self.assertEqual(len(self.maze.grid), 10)
-        self.assertEqual(len(self.maze.grid[0]), 10)
+        self.assertEqual(len(self.maze.grid), 9)
+        self.assertEqual(len(self.maze.grid[0]), 9)
 
     def test_maze_is_wall(self):
         self.maze.grid[0][0] = 1
@@ -88,7 +89,7 @@ class TestZombie(unittest.TestCase):
 
     def test_zombie_initialization(self):
         self.assertEqual(self.zombie.grid_position, (0, 0))
-        self.assertEqual(self.zombie.rect.size, (CELL_SIZE, CELL_SIZE))
+        self.assertEqual(self.zombie.rect.size, (ZOMBIE_SIZE, ZOMBIE_SIZE))
 
     def test_zombie_move(self):
         self.zombie.move_to((1, 0))
@@ -98,20 +99,30 @@ class TestGame(unittest.TestCase):
     @patch('pygame.display.set_mode')
     def setUp(self, mock_set_mode):
         self.screen = mock_set_mode.return_value
+        self.screen.get_size.return_value = (800, 600)  # Mock the screen size
         self.game = Game(self.screen)
 
     def test_game_initialization(self):
         self.assertIsNotNone(self.game.player)
         self.assertIsNotNone(self.game.maze)
-        self.assertEqual(self.game.state, "playing")
+        self.assertEqual(self.game.state, "welcome")  # The initial state is "welcome"
 
-    @patch('ezm.game.Game.handle_events')
-    @patch('ezm.game.Game.update')
+    @patch('ezm.game.Game.handle_player_movement')
+    @patch('ezm.game.Game.check_collisions')
+    @patch('ezm.game.Game.spawn_zombies')
+    @patch('ezm.game.Game.update_score')
+    @patch('ezm.game.Game.check_game_over')
     @patch('ezm.game.Game.draw')
-    def test_game_update_gameplay(self, mock_draw, mock_update, mock_handle_events):
-        self.game.update_gameplay()
-        mock_handle_events.assert_called_once()
-        mock_update.assert_called_once()
+    def test_game_update_gameplay(self, mock_draw, mock_check_game_over, mock_update_score, 
+                                  mock_spawn_zombies, mock_check_collisions, mock_handle_player_movement):
+        self.game.state = "playing"
+        result = self.game.update_gameplay()
+        self.assertTrue(result)
+        mock_handle_player_movement.assert_called()
+        mock_check_collisions.assert_called_once()
+        mock_spawn_zombies.assert_called_once()
+        mock_update_score.assert_called_once()
+        mock_check_game_over.assert_called_once()
         mock_draw.assert_called_once()
 
 if __name__ == '__main__':

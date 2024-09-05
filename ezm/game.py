@@ -23,8 +23,8 @@ class Game:
     def initialize_game_variables(self):
         self.state = "welcome"
         self.settings = {
-            "maze_width": MAZE_WIDTH,
-            "maze_height": MAZE_HEIGHT,
+            "maze_width": MAZE_WIDTH if MAZE_WIDTH % 2 == 1 else MAZE_WIDTH + 1,
+            "maze_height": MAZE_HEIGHT if MAZE_HEIGHT % 2 == 1 else MAZE_HEIGHT + 1,
             "zombie_delay": DEFAULT_ZOMBIE_DELAY,
             "zombie_speed_fast": DEFAULT_ZOMBIE_SPEED_FAST,
             "zombie_spawning_enabled": DEFAULT_ZOMBIE_SPAWNING_ENABLED,
@@ -115,7 +115,7 @@ class Game:
                 print(f"Attempting to use algorithm: {algorithm}")
                 maze_data = self.generate_maze(algorithm, self.settings["maze_width"], self.settings["maze_height"])
                 if maze_data:
-                    self.maze = Maze(self.settings["maze_height"], self.settings["maze_width"])
+                    self.maze = Maze(self.settings["maze_height"], self.settings["maze_width"], algorithm)
                     self.maze.grid = maze_data
                     if self.maze.find_solution():
                         print(f"Maze generated successfully on attempt {attempt + 1}")

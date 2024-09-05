@@ -22,6 +22,9 @@ class Maze:
 
     @classmethod
     def generate_fallback(cls, rows: int, cols: int):
+        # Ensure dimensions are odd
+        rows = rows if rows % 2 == 1 else rows + 1
+        cols = cols if cols % 2 == 1 else cols + 1
         maze = cls(rows, cols, 'fallback')
         maze.fallback_generate()
         return maze
