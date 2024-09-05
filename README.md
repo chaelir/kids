@@ -12,12 +12,16 @@
 
 # Git #
 
-*Download* [https://www.cursor.com/features](https://git-scm.com/download/win)
+*Download* [https://git-scm.com/download/win](https://git-scm.com/download/win)
 
-``
-Host github.com
+# SSH Configuration #
+
+Add the following to your SSH config file (usually located at `~/.ssh/config`):
+
+
+        Host github.com
         IdentityFile ~/.ssh/id_github
-``
+
 
 git clone git@github.com:chaelir/kids.git
 
