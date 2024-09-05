@@ -1,7 +1,7 @@
 import pygame
 import os
 import unittest
-from ezm.constants import ZOMBIE_SPEED, ZOMBIE_SIZE, CELL_SIZE, ZOMBIE_IMAGE_PATH
+from ezm.constants import ZOMBIE_SPEED, ZOMBIE_SIZE, CELL_SIZE
 
 class Zombie(pygame.sprite.Sprite):
     def __init__(self, grid_pos):
@@ -10,7 +10,10 @@ class Zombie(pygame.sprite.Sprite):
         self.target_grid_position = self.grid_position
         self.move_progress = 0
         self.move_duration = 1
-        self.image = pygame.image.load(ZOMBIE_IMAGE_PATH).convert_alpha()
+        
+        # Load the zombie image from the assets folder
+        asset_dir = os.path.join(os.path.dirname(__file__), 'assets')
+        self.image = pygame.image.load(os.path.join(asset_dir, "zombie.jpg")).convert_alpha()
         self.image = pygame.transform.scale(self.image, (ZOMBIE_SIZE, ZOMBIE_SIZE))
         self.rect = self.image.get_rect()
         self.rect.center = self.grid_to_pixel(self.grid_position)

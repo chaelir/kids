@@ -2,6 +2,7 @@ import random
 import execjs
 import os
 from typing import List, Tuple
+import unittest
 
 # Type aliases for clarity
 Grid = List[List[int]]
@@ -10,8 +11,8 @@ Point = Tuple[int, int]
 class Maze:
     def __init__(self, rows: int, cols: int, generation_algorithm: str = 'recursive_division'):
         # Ensure dimensions are odd
-        self.rows = rows - 1 if rows % 2 == 0 else rows
-        self.cols = cols - 1 if cols % 2 == 0 else cols
+        self.rows = rows if rows % 2 == 1 else rows + 1
+        self.cols = cols if cols % 2 == 1 else cols + 1
         self.grid: Grid = [[1 for _ in range(self.cols)] for _ in range(self.rows)]
         self.in_point: Point = (0, 1)
         self.out_point: Point = (self.rows - 1, self.cols - 2)
@@ -193,15 +194,32 @@ def test_recursive_division():
     print(f"Test passed: Maze size {rows}x{cols}")
     return True
 
+class TestMaze(unittest.TestCase):
+    def setUp(self):
+        self.maze = Maze(19, 19, 'recursive_division')
+
+    def test_maze_dimensions(self):
+        self.assertEqual(self.maze.rows, 19)
+        self.assertEqual(self.maze.cols, 19)
+
+    def test_entrance_exit(self):
+        self.assertEqual(self.maze.grid[self.maze.in_point[0]][self.maze.in_point[1]], 0)
+        self.assertEqual(self.maze.grid[self.maze.out_point[0]][self.maze.out_point[1]], 0)
+
+    def test_solution_exists(self):
+        self.assertTrue(len(self.maze.solution) > 0)
+
+    def test_solution_validity(self):
+        for point in self.maze.solution:
+            self.assertEqual(self.maze.grid[point[0]][point[1]], 0)
+
+    def test_outer_walls(self):
+        for i in range(self.maze.rows):
+            self.assertEqual(self.maze.grid[i][0], 1)
+            self.assertEqual(self.maze.grid[i][self.maze.cols-1], 1)
+        for j in range(self.maze.cols):
+            self.assertEqual(self.maze.grid[0][j], 1)
+            self.assertEqual(self.maze.grid[self.maze.rows-1][j], 1)
+
 if __name__ == "__main__":
-    print("Running general maze generation tests...")
-    if test_maze_generation():
-        print("\nAll general tests passed!")
-    else:
-        print("\nSome general tests failed.")
-    
-    print("\nRunning specific test for recursive division...")
-    if test_recursive_division():
-        print("\nRecursive division test passed!")
-    else:
-        print("\nRecursive division test failed.")
+    unittest.main()

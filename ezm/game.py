@@ -51,7 +51,7 @@ class Game:
             return []
 
     def load_assets(self):
-        # Update asset paths to use the 'ezm' folder
+        # Update asset paths to use the 'ezm/assets' folder
         asset_dir = os.path.join(os.path.dirname(__file__), 'assets')
         self.player_image = pygame.image.load(os.path.join(asset_dir, "nobody.jpg")).convert_alpha()
         self.player_with_sword_image = pygame.image.load(os.path.join(asset_dir, "sworded.jpg")).convert_alpha()
