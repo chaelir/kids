@@ -115,8 +115,9 @@ class Game:
                 print(f"Attempting to use algorithm: {algorithm}")
                 maze_data = self.generate_maze(algorithm, self.settings["maze_width"], self.settings["maze_height"])
                 if maze_data:
-                    self.maze = Maze(maze_data)
-                    if self.maze.has_solution():
+                    self.maze = Maze(self.settings["maze_height"], self.settings["maze_width"])
+                    self.maze.grid = maze_data
+                    if self.maze.find_solution():
                         print(f"Maze generated successfully on attempt {attempt + 1}")
                         break
                     else:
@@ -131,8 +132,8 @@ class Game:
 
         # Initialize game objects
         self.player = Player(self.maze.get_start_position())
-        self.zombies.empty()
-        self.swords.empty()
+        self.zombies = pygame.sprite.Group()
+        self.swords = pygame.sprite.Group()
 
         # Place swords
         for _ in range(self.settings["sword_count"]):
@@ -146,6 +147,21 @@ class Game:
 
         # Set game state to playing
         self.state = "playing"
+
+    def place_sword(self):
+        x, y = self.get_random_empty_position()
+        sword = pygame.sprite.Sprite()
+        sword.image = self.sword_image
+        sword.rect = sword.image.get_rect()
+        sword.rect.center = (x, y)
+        self.swords.add(sword)
+
+    def get_random_empty_position(self):
+        while True:
+            x = random.randint(0, self.maze.width - 1)
+            y = random.randint(0, self.maze.height - 1)
+            if not self.maze.is_wall(x, y):
+                return x * CELL_SIZE + CELL_SIZE // 2, y * CELL_SIZE + CELL_SIZE // 2
 
     def generate_maze(self, algorithm, width, height):
         if algorithm not in self.maze_algorithms:
@@ -336,14 +352,6 @@ class Game:
             self.state = "game_over"
             self.end_time = time.time()
 
-    def get_random_empty_position(self):
-        # Get a random empty position on the maze
-        while True:
-            x = random.randint(0, self.settings["maze_width"] - 1)
-            y = random.randint(0, self.settings["maze_height"] - 1)
-            if self.maze[y][x] == 0:
-                return x * self.cell_size + self.cell_size // 2, y * self.cell_size + self.cell_size // 2
-
     def calculate_score(self):
         # Calculate player's score
         time_played = self.end_time - self.start_time
@@ -402,5 +410,8 @@ class Game:
             self.player.collect_sword()
             self.sword = None
         self.score += 1
+
+    def draw_sword(self):
+        self.swords.draw(self.screen)
 
 # Additional helper methods as needed
