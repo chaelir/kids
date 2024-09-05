@@ -113,20 +113,24 @@ class Game:
             try:
                 algorithm = self.settings["generation_algorithm"]
                 print(f"Attempting to use algorithm: {algorithm}")
-                self.maze = Maze(self.settings["maze_height"], self.settings["maze_width"], algorithm)
-                if self.maze.solution:
-                    print(f"Maze generated successfully on attempt {attempt + 1}")
-                    break
+                maze_data = self.generate_maze(algorithm, self.settings["maze_width"], self.settings["maze_height"])
+                if maze_data:
+                    self.maze = Maze(maze_data)
+                    if self.maze.has_solution():
+                        print(f"Maze generated successfully on attempt {attempt + 1}")
+                        break
+                    else:
+                        raise ValueError("Generated maze has no solution")
                 else:
-                    raise ValueError("Generated maze has no solution")
+                    raise ValueError("Failed to generate maze")
             except Exception as e:
                 print(f"Error generating maze (attempt {attempt + 1}): {str(e)}")
         else:
             print(f"Failed to generate a valid maze after {max_attempts} attempts. Using fallback method.")
-            # Implement a fallback maze generation method here if needed
+            self.maze = Maze.generate_fallback(self.settings["maze_height"], self.settings["maze_width"])
 
         # Initialize game objects
-        self.player = Player(self.maze.start)
+        self.player = Player(self.maze.get_start_position())
         self.zombies.empty()
         self.swords.empty()
 
@@ -142,6 +146,18 @@ class Game:
 
         # Set game state to playing
         self.state = "playing"
+
+    def generate_maze(self, algorithm, width, height):
+        if algorithm not in self.maze_algorithms:
+            raise ValueError(f"Algorithm '{algorithm}' not found")
+        
+        ctx = self.maze_algorithms[algorithm]
+        try:
+            maze_data = ctx.call("generateMaze", width, height)
+            return maze_data
+        except Exception as e:
+            print(f"Error generating maze with algorithm '{algorithm}': {str(e)}")
+            return None
 
     def update_gameplay(self):
         if self.player is None:
@@ -252,11 +268,16 @@ class Game:
         self.screen.blit(score_text, (self.screen_width - score_text.get_width() - 10, 10))
 
     def validate_settings(self):
-        # Validate game settings
-        if self.maze_size < 10 or self.maze_size > 50:
-            raise ValueError("Maze size must be between 10 and 50")
-        if self.num_zombies < 1 or self.num_zombies > 10:
-            raise ValueError("Number of zombies must be between 1 and 10")
+        errors = []
+        if not (MIN_MAZE_WIDTH <= self.settings["maze_width"] <= MAX_MAZE_WIDTH):
+            errors.append(f"Maze width must be between {MIN_MAZE_WIDTH} and {MAX_MAZE_WIDTH}.")
+        if not (MIN_MAZE_HEIGHT <= self.settings["maze_height"] <= MAX_MAZE_HEIGHT):
+            errors.append(f"Maze height must be between {MIN_MAZE_HEIGHT} and {MAX_MAZE_HEIGHT}.")
+        if not (MIN_ZOMBIE_DELAY <= self.settings["zombie_delay"] <= MAX_ZOMBIE_DELAY):
+            errors.append(f"Zombie delay must be between {MIN_ZOMBIE_DELAY} and {MAX_ZOMBIE_DELAY}.")
+        if self.settings["generation_algorithm"] not in self.maze_algorithms:
+            errors.append(f"Invalid maze generation algorithm: {self.settings['generation_algorithm']}")
+        return errors
 
     def handle_welcome_click(self, pos):
         # Handle clicks on welcome screen
@@ -272,7 +293,7 @@ class Game:
 
     def replay_game(self):
         # Replay the game
-        self.__init__(self.screen, self.maze_size, self.num_zombies)
+        self.__init__(self.screen)
         self.state = "playing"
         self.start_time = time.time()
 
@@ -280,7 +301,7 @@ class Game:
         # Handle screen resize
         self.screen_width, self.screen_height = size
         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height), pygame.RESIZABLE)
-        self.cell_size = min(self.screen_width // self.maze_size, self.screen_height // self.maze_size)
+        self.cell_size = min(self.screen_width // self.settings["maze_width"], self.screen_height // self.settings["maze_height"])
         self.calculate_maze_dimensions()
 
     def get_valid_moves(self):
@@ -290,7 +311,7 @@ class Game:
         valid_moves = []
         for dx, dy in [(0, -1), (1, 0), (0, 1), (-1, 0)]:  # Up, Right, Down, Left
             new_x, new_y = cell_x + dx, cell_y + dy
-            if 0 <= new_x < self.maze_size and 0 <= new_y < self.maze_size and self.maze[new_y][new_x] == 0:
+            if 0 <= new_x < self.settings["maze_width"] and 0 <= new_y < self.settings["maze_height"] and self.maze[new_y][new_x] == 0:
                 valid_moves.append((dx, dy))
         return valid_moves
 
@@ -318,8 +339,8 @@ class Game:
     def get_random_empty_position(self):
         # Get a random empty position on the maze
         while True:
-            x = random.randint(0, self.maze_size - 1)
-            y = random.randint(0, self.maze_size - 1)
+            x = random.randint(0, self.settings["maze_width"] - 1)
+            y = random.randint(0, self.settings["maze_height"] - 1)
             if self.maze[y][x] == 0:
                 return x * self.cell_size + self.cell_size // 2, y * self.cell_size + self.cell_size // 2
 
@@ -344,8 +365,8 @@ class Game:
 
     def calculate_maze_dimensions(self):
         # Calculate maze dimensions
-        self.maze_top_left = ((self.screen_width - self.maze_size * self.cell_size) // 2,
-                              (self.screen_height - self.maze_size * self.cell_size) // 2)
+        self.maze_top_left = ((self.screen_width - self.settings["maze_width"] * self.cell_size) // 2,
+                              (self.screen_height - self.settings["maze_height"] * self.cell_size) // 2)
 
     def handle_keystroke(self, key):
         # Handle keystrokes during gameplay
