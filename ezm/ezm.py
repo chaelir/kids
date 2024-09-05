@@ -40,9 +40,9 @@ MIN_ZOMBIE_DELAY = int(getenv('MIN_ZOMBIE_DELAY', '1'))
 MAX_ZOMBIE_DELAY = int(getenv('MAX_ZOMBIE_DELAY', '9'))
 TILE_SIZE = int(getenv('TILE_SIZE', '32'))
 
+# Sword spawning settings
 MAP_WIDTH = int(getenv('MAP_WIDTH', '800'))
 MAP_HEIGHT = int(getenv('MAP_HEIGHT', '600'))
-
 MAX_ZOMBIES = int(getenv('MAX_ZOMBIES', '2'))
 
 # Default settings
@@ -53,6 +53,9 @@ DEFAULT_ZOMBIE_SPEED_FAST = getenv('DEFAULT_ZOMBIE_SPEED_FAST', 'True').lower() 
 DEFAULT_ZOMBIE_SPAWNING_ENABLED = getenv('DEFAULT_ZOMBIE_SPAWNING_ENABLED', 'True').lower() == 'true'
 DEFAULT_GENERATION_ALGORITHM = getenv('DEFAULT_GENERATION_ALGORITHM', 'recursive_division')
 DEFAULT_PLAYER_NAME = getenv('DEFAULT_PLAYER_NAME', 'Mario')
+MIN_SWORDS = int(getenv('MIN_SWORDS', '1'))
+MAX_SWORDS = int(getenv('MAX_SWORDS', '3'))
+DEFAULT_SWORD_COUNT = int(getenv('DEFAULT_SWORD_COUNT', '1'))   
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos):
@@ -922,18 +925,18 @@ class Game:
                 if valid_moves:
                     new_pos = random.choice(valid_moves)
                     zombie.move_to(new_pos)
-                    
+
                     # Check for collision immediately after moving
                     if new_pos == self.player_position:
                         self.handle_collision(zombie)
 
     def handle_collision(self, zombie):
-        if self.sword_collected:
-            self.zombies.remove(zombie)
-            self.zombies_vanquished += 1
+                if self.sword_collected:
+                    self.zombies.remove(zombie)
+                    self.zombies_vanquished += 1
             print(f"Zombie vanquished! Total vanquished: {self.zombies_vanquished}")
-        else:
-            self.game_over("Game over! You were caught by a zombie.")
+                else:
+                    self.game_over("Game over! You were caught by a zombie.")
 
     def get_random_empty_position(self):
         empty_cells = [(r, c) for r in range(self.maze.rows) for c in range(self.maze.cols)
@@ -988,8 +991,8 @@ class Game:
 
     def save_leaderboard(self):
         try:
-            with open('leaderboard.json', 'w') as f:
-                json.dump(self.leaderboard, f)
+        with open('leaderboard.json', 'w') as f:
+            json.dump(self.leaderboard, f)
         except IOError:
             print("Error saving leaderboard.")
 
@@ -1056,19 +1059,19 @@ class Game:
             if not self.maze.is_wall(new_row, new_col):
                 self.player_position = new_pos
                 self.player_path.append(new_pos)
-                self.update_valid_moves()
+        self.update_valid_moves()
                 self.last_move_time = current_time
                 print(f"Player moved to: {new_pos}")
 
-                if self.player_position == self.sword_position and not self.sword_collected:
-                    self.sword_collected = True
-                    print("Sword collected!")
+        if self.player_position == self.sword_position and not self.sword_collected:
+            self.sword_collected = True
+            print("Sword collected!")
 
                 self.check_zombie_collisions()  # Check for collisions after movement
 
                 # Check if player has reached the exit
-                if self.player_position == self.maze.out_point:
-                    self.game_over("Congratulations! You've escaped the maze!")
+        if self.player_position == self.maze.out_point:
+            self.game_over("Congratulations! You've escaped the maze!")
                     return
             else:
                 print("Move blocked by wall")
@@ -1117,18 +1120,18 @@ class Game:
         redraw_needed = False
 
         for event in events:
-            if event.type == pygame.QUIT:
-                print("Quit event detected")
+                    if event.type == pygame.QUIT:
+                        print("Quit event detected")
                 return False
-            elif event.type == pygame.KEYDOWN:
+                    elif event.type == pygame.KEYDOWN:
                 if self.state == "welcome":
-                    self.handle_welcome_keydown(event)
+                        self.handle_welcome_keydown(event)
                     redraw_needed = True
-                elif self.state == "playing":
+            elif self.state == "playing":
                     self.handle_keystroke(event.key)
                     redraw_needed = True
-                elif self.state == "game_over":
-                    self.handle_game_over_keydown(event)
+            elif self.state == "game_over":
+                        self.handle_game_over_keydown(event)
                     redraw_needed = True
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.state == "welcome":
