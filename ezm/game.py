@@ -18,6 +18,7 @@ class Game:
         self.load_maze_algorithms()
         self.font = pygame.font.Font(None, int(min(self.screen_width, self.screen_height) * 0.03))
         self.title_font = pygame.font.Font(None, int(min(self.screen_width, self.screen_height) * 0.05))
+        self.start_game()  # Call start_game in the constructor
 
     def initialize_game_variables(self):
         self.state = "welcome"
@@ -143,35 +144,29 @@ class Game:
         self.state = "playing"
 
     def update_gameplay(self):
-        # Update game state during gameplay
+        if self.player is None:
+            print("Player is None. Restarting game.")
+            self.start_game()
+            return True
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return False
             elif event.type == pygame.KEYDOWN:
                 self.handle_player_movement(event.key)
 
-        # Update player position
         self.player.update()
-
-        # Update zombies
         for zombie in self.zombies:
             zombie.update(1/30)  # Assuming 30 FPS
 
-        # Check for collisions
         self.check_collisions()
-
-        # Spawn new zombies if needed
         self.spawn_zombies()
-
-        # Update score
         self.update_score()
 
-        # Check for game over conditions
         if self.check_game_over():
             self.state = "game_over"
             self.end_time = time.time()
 
-        # Draw the game
         self.draw()
         pygame.display.flip()
 
