@@ -9,6 +9,8 @@ class SolutionPanel:
         self.submit_button = pygame.Rect(600, 500, 100, 50)
         self.clear_button = pygame.Rect(450, 500, 100, 50)
         self.formula_rects = []
+        self.solution_text = ""
+        self.solution_color = (0, 0, 0)  # Default black color
 
     def add_to_formula(self, value):
         self.formula.append(value)
@@ -91,3 +93,11 @@ class SolutionPanel:
         clear_text = font.render("Clear", True, (0, 0, 0))
         clear_rect = clear_text.get_rect(center=self.clear_button.center)
         screen.blit(clear_text, clear_rect)
+
+        # Draw solution text in green
+        solution_surface = font.render(self.solution_text, True, self.solution_color)
+        screen.blit(solution_surface, (50, 450))
+
+    def display_solution(self, solution: str):
+        self.solution_text = solution
+        self.solution_color = (0, 255, 0)  # Green color for the solution
