@@ -6,8 +6,8 @@ class SolutionPanel:
     def __init__(self, game):
         self.game = game
         self.formula = []
-        self.submit_button = pygame.Rect(600, 500, 100, 50)
-        self.clear_button = pygame.Rect(450, 500, 100, 50)
+        self.submit_button = pygame.Rect(50, 500, 100, 50)
+        self.clear_button = pygame.Rect(200, 500, 100, 50)
         self.formula_rects = []
         self.solution_text = ""
         self.solution_color = (0, 0, 0)  # Default black color
@@ -74,7 +74,7 @@ class SolutionPanel:
 
     def draw(self, screen):
         font = pygame.font.Font(None, 36)
-        x, y = 50, 500
+        x, y = 50, 400
         self.formula_rects = []
 
         for value in self.formula:
@@ -84,15 +84,17 @@ class SolutionPanel:
             self.formula_rects.append(text_rect)
             x += text_rect.width + 5
 
-        pygame.draw.rect(screen, (0, 255, 0), self.submit_button)
-        submit_text = font.render("Submit", True, (0, 0, 0))
-        submit_rect = submit_text.get_rect(center=self.submit_button.center)
-        screen.blit(submit_text, submit_rect)
-
-        pygame.draw.rect(screen, (255, 0, 0), self.clear_button)
-        clear_text = font.render("Clear", True, (0, 0, 0))
-        clear_rect = clear_text.get_rect(center=self.clear_button.center)
-        screen.blit(clear_text, clear_rect)
+        # Draw buttons
+        buttons = [
+            (self.submit_button, "Submit", (0, 255, 0)),
+            (self.clear_button, "Clear", (255, 0, 0))
+        ]
+        
+        for button, text, color in buttons:
+            pygame.draw.rect(screen, color, button)
+            text_surface = font.render(text, True, (0, 0, 0))
+            text_rect = text_surface.get_rect(center=button.center)
+            screen.blit(text_surface, text_rect)
 
         # Draw solution text in green
         solution_surface = font.render(self.solution_text, True, self.solution_color)
