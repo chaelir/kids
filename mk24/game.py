@@ -19,11 +19,14 @@ class Game:
         self.solution_panel = SolutionPanel(self)
         
         self.running = True
-        self.countdown = 60  # 1 minute countdown
+        self.countdown = 120  # 2 minute countdown
         self.last_second = pygame.time.get_ticks()
         
         self.flash_start = 0
         self.flash_duration = 500  # 0.5 seconds
+        self.flash_color = (255, 255, 255)  # Default white
+
+        self.advanced_symbols_enabled = False
 
     def run(self):
         while self.running:
@@ -37,8 +40,6 @@ class Game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
-            elif event.type == pygame.USEREVENT:
-                self.redraw_cards()  # Automatically redraw cards after the flash
             else:
                 self.board.handle_event(event)
                 self.control_panel.handle_event(event)
@@ -54,7 +55,7 @@ class Game:
 
     def draw(self):
         if self.is_flashing():
-            self.screen.fill((0, 255, 0))  # Flash green
+            self.screen.fill(self.flash_color)
         else:
             self.screen.fill((255, 255, 255))  # Normal white background
         
@@ -68,7 +69,7 @@ class Game:
         pygame.display.flip()
 
     def reset_game(self):
-        self.countdown = 60
+        self.countdown = 120
         self.last_second = pygame.time.get_ticks()
         self.board.generate_cards()
         self.solution_panel.reset_formula()
@@ -77,8 +78,13 @@ class Game:
         self.board.generate_cards()
         self.solution_panel.reset_formula()
 
-    def start_flash(self):
+    def start_flash(self, color):
         self.flash_start = pygame.time.get_ticks()
+        self.flash_color = color
 
     def is_flashing(self):
         return pygame.time.get_ticks() - self.flash_start < self.flash_duration
+
+    def toggle_advanced_symbols(self):
+        self.advanced_symbols_enabled = not self.advanced_symbols_enabled
+        self.control_panel.update_symbols(self.advanced_symbols_enabled)
