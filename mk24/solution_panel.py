@@ -43,16 +43,15 @@ class SolutionPanel:
 
     def evaluate_formula(self):
         try:
-            result = self.calculate_result(''.join(self.formula))
-            if abs(result - 24) < 1e-6:  # Use a small epsilon for float comparison
-                print("Correct! The formula equals 24.")
+            formula_str = ''.join(self.formula)
+            result = self.calculate_result(formula_str)
+            if result == 24:  # Check for exact equality
                 self.game.start_flash((0, 255, 0))  # Green flash
+                self.game.increment_solved_count()  # Increment the solved count
                 self.game.redraw_cards()
             else:
-                print(f"Incorrect. The formula equals {result}.")
                 self.game.start_flash((255, 0, 0))  # Red flash
-        except Exception as e:
-            print(f"Invalid formula: {e}")
+        except Exception:
             self.game.start_flash((255, 0, 0))  # Red flash
 
     def calculate_result(self, formula):
@@ -60,17 +59,21 @@ class SolutionPanel:
             return math.factorial(int(n))
 
         def power(base, exp):
-            return math.pow(base, exp)
-
-        # Replace ^ with ** for power operation
-        formula = formula.replace('^', '**')
+            return math.pow(float(base), float(exp))
 
         # Handle factorial
         while '!' in formula:
             formula = re.sub(r'(\d+)!', r'factorial(\1)', formula)
 
+        # Handle power operation
+        while '^' in formula:
+            formula = re.sub(r'(\d+|\))\^(\d+|\()', r'power(\1,\2)', formula)
+
         # Evaluate the expression
-        return eval(formula, {"factorial": factorial, "math": math})
+        result = eval(formula, {"factorial": factorial, "power": power, "math": math})
+        
+        # Round the result to handle floating point imprecision
+        return round(result, 10)
 
     def draw(self, screen):
         font = pygame.font.Font(None, 36)
@@ -78,7 +81,9 @@ class SolutionPanel:
         self.formula_rects = []
 
         for value in self.formula:
-            text = font.render(value, True, (0, 0, 0))
+            # Convert ** back to ^ for display
+            display_value = '^' if value == '**' else value
+            text = font.render(display_value, True, (0, 0, 0))
             text_rect = text.get_rect(topleft=(x, y))
             screen.blit(text, text_rect)
             self.formula_rects.append(text_rect)

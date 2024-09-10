@@ -4,7 +4,7 @@ class ControlPanel:
     def __init__(self, game):
         self.game = game
         self.basic_symbols = ['+', '-', '*', '/', '(', ')']
-        self.advanced_symbols = ['!', '^']
+        self.advanced_symbols = ['!', '^']  # Keep ^ for display
         self.symbols = self.basic_symbols.copy()
         self.buttons = []
         self.toggle_button = pygame.Rect(650, 500, 80, 50)
@@ -51,7 +51,7 @@ class ControlPanel:
 
         # Draw buttons
         buttons = [
-            (self.reveal_button, "Reveal", (100, 100, 255)),
+            (self.reveal_button, "Reveal", (100, 100, 255)),  # Always blue now
             (self.redraw_button, "Redraw", (100, 200, 100)),
             (self.toggle_button, "Toggle", (150, 150, 150))
         ]

@@ -10,18 +10,25 @@ class Board:
 
     def generate_cards(self):
         self.cards = [Card(random.randint(1, 10)) for _ in range(4)]
+        self.position_cards()
+
+    def position_cards(self):
+        for i, card in enumerate(self.cards):
+            card.rect.topleft = (50 + i * 100, 50)
 
     def draw(self, screen):
-        for i, card in enumerate(self.cards):
-            card.draw(screen, 50 + i * 100, 50)
+        for card in self.cards:
+            card.draw(screen)
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
-            for card in self.cards:
-                if card.is_clicked(event.pos):
+            for card in self.cards[:]:  # Iterate over a copy of the list
+                if card.rect.collidepoint(event.pos):
                     self.game.solution_panel.add_to_formula(str(card.value))
                     self.cards.remove(card)
                     break
 
     def put_back_number(self, value):
-        self.cards.append(Card(value))
+        new_card = Card(value)
+        self.cards.append(new_card)
+        self.position_cards()
