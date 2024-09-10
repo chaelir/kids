@@ -8,7 +8,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from ezm.main import initialize_game, main_game_loop, cleanup
-from ezm.constants import FPS, PLAYER_SIZE, CELL_SIZE
+from ezm.constants import FPS, PLAYER_SIZE, CELL_SIZE, PLAYER_SPEED, ZOMBIE_SIZE  # Add PLAYER_SPEED and ZOMBIE_SIZE
 from ezm.player import Player
 from ezm.maze import Maze
 from ezm.zombie import Zombie
@@ -79,27 +79,57 @@ class TestMaze(unittest.TestCase):
         self.assertFalse(self.maze.is_wall(0, 0))
 
     def test_maze_get_valid_neighbors(self):
-        self.maze.grid = [[0, 1, 0], [0, 0, 0], [0, 1, 0]]
+        self.maze.grid = [
+            [1, 0, 1],
+            [0, 0, 0],
+            [1, 0, 1]
+        ]
         neighbors = self.maze.get_valid_neighbors((1, 1))
         self.assertEqual(set(neighbors), {(0, 1), (1, 0), (1, 2), (2, 1)})
 
 class TestZombie(unittest.TestCase):
-    def setUp(self):
+    @patch('pygame.image.load')
+    @patch('pygame.transform.scale')
+    def setUp(self, mock_scale, mock_load):
+        mock_image = MagicMock()
+        mock_load.return_value = mock_image
+        mock_scale.return_value = mock_image
         self.zombie = Zombie((0, 0))
 
     def test_zombie_initialization(self):
         self.assertEqual(self.zombie.grid_position, (0, 0))
-        self.assertEqual(self.zombie.rect.size, (ZOMBIE_SIZE, ZOMBIE_SIZE))
+        self.assertEqual(self.zombie.target_grid_position, (0, 0))
+        self.assertEqual(self.zombie.move_progress, 0)
+        self.assertEqual(self.zombie.move_duration, 1)
 
     def test_zombie_move(self):
         self.zombie.move_to((1, 0))
         self.assertEqual(self.zombie.target_grid_position, (1, 0))
+        self.assertEqual(self.zombie.move_progress, 0)
 
 class TestGame(unittest.TestCase):
     @patch('pygame.display.set_mode')
-    def setUp(self, mock_set_mode):
+    @patch('pygame.image.load')
+    @patch('pygame.transform.smoothscale')
+    @patch('pygame.font.Font')
+    @patch('ezm.maze.Maze')  # Add this line
+    def setUp(self, mock_maze, mock_font, mock_smoothscale, mock_load, mock_set_mode):
         self.screen = mock_set_mode.return_value
         self.screen.get_size.return_value = (800, 600)  # Mock the screen size
+
+        # Mock image loading and scaling
+        mock_image = MagicMock()
+        mock_load.return_value = mock_image
+        mock_image.convert_alpha.return_value = mock_image
+        mock_smoothscale.return_value = mock_image
+
+        # Mock font
+        mock_font.return_value = MagicMock()
+
+        # Mock maze
+        mock_maze_instance = mock_maze.return_value
+        mock_maze_instance.get_start_position.return_value = (0, 1)  # Mock start position
+
         self.game = Game(self.screen)
 
     def test_game_initialization(self):

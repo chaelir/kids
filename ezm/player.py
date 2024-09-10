@@ -1,5 +1,4 @@
 import pygame
-import unittest
 from ezm.constants import ORANGE, YELLOW, PLAYER_SPEED, PLAYER_SIZE
 
 class Player(pygame.sprite.Sprite):

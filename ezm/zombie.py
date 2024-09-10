@@ -1,6 +1,5 @@
 import pygame
 import os
-import unittest
 from ezm.constants import ZOMBIE_SPEED, ZOMBIE_SIZE, CELL_SIZE
 
 class Zombie(pygame.sprite.Sprite):

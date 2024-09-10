@@ -43,7 +43,7 @@ class Maze:
             'sidewinder': 'sidewinderMaze',
             'binary_tree': 'binaryTreeMaze',
             'prims': 'primsMaze',
-            'recursive_division': 'recursiveDivisionMaze'  # This is correct now
+            'recursive_division': 'recursiveDivisionMaze'
         }
         
         if self.generation_algorithm not in algorithms:
@@ -119,7 +119,7 @@ class Maze:
         neighbors = []
         for dr, dc in [(0, 1), (1, 0), (0, -1), (-1, 0)]:
             new_row, new_col = row + dr, col + dc
-            if 0 <= new_row < self.rows and 0 <= new_col < self.cols and not self.is_wall(new_row, new_col):
+            if 0 <= new_row < self.rows and 0 <= new_col < self.cols and self.grid[new_row][new_col] == 0:
                 neighbors.append((new_row, new_col))
         return neighbors
 
@@ -143,6 +143,9 @@ class Maze:
             self.grid[i][0] = self.grid[i][self.cols-1] = 1
         for j in range(self.cols):
             self.grid[0][j] = self.grid[self.rows-1][j] = 1
+
+    def get_start_position(self) -> Point:
+        return self.in_point
 
 # Add these test functions at the end of the file
 
