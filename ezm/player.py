@@ -1,4 +1,5 @@
 import pygame
+import unittest
 from ezm.constants import ORANGE, YELLOW, PLAYER_SPEED, PLAYER_SIZE
 
 class Player(pygame.sprite.Sprite):
@@ -19,10 +20,14 @@ class Player(pygame.sprite.Sprite):
         self.rect.y += dy * self.speed
 
     def update(self):
-        keys = pygame.key.get_pressed()
-        dx = keys[pygame.K_RIGHT] - keys[pygame.K_LEFT]
-        dy = keys[pygame.K_DOWN] - keys[pygame.K_UP]
-        self.move(dx, dy)
+        try:
+            keys = pygame.key.get_pressed()
+            dx = keys[pygame.K_RIGHT] - keys[pygame.K_LEFT]
+            dy = keys[pygame.K_DOWN] - keys[pygame.K_UP]
+            self.move(dx, dy)
+        except pygame.error:
+            # If Pygame is not initialized, do nothing
+            pass
 
     def draw(self, surface):
         surface.blit(self.image, self.rect)

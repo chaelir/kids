@@ -1,6 +1,8 @@
 import pygame
 import os
 from ezm.constants import ZOMBIE_SPEED, ZOMBIE_SIZE, CELL_SIZE
+import unittest
+
 
 class Zombie(pygame.sprite.Sprite):
     def __init__(self, grid_pos):
@@ -12,8 +14,14 @@ class Zombie(pygame.sprite.Sprite):
         
         # Load the zombie image from the assets folder
         asset_dir = os.path.join(os.path.dirname(__file__), 'assets')
-        self.image = pygame.image.load(os.path.join(asset_dir, "zombie.jpg")).convert_alpha()
-        self.image = pygame.transform.scale(self.image, (ZOMBIE_SIZE, ZOMBIE_SIZE))
+        try:
+            self.image = pygame.image.load(os.path.join(asset_dir, "zombie.jpg")).convert_alpha()
+            self.image = pygame.transform.scale(self.image, (ZOMBIE_SIZE, ZOMBIE_SIZE))
+        except pygame.error:
+            # If image loading fails, create a surface instead
+            self.image = pygame.Surface((ZOMBIE_SIZE, ZOMBIE_SIZE))
+            self.image.fill((0, 255, 0))  # Fill with green color
+        
         self.rect = self.image.get_rect()
         self.rect.center = self.grid_to_pixel(self.grid_position)
 

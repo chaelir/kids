@@ -18,7 +18,7 @@ class Game:
         self.load_maze_algorithms()
         self.font = pygame.font.Font(None, int(min(self.screen_width, self.screen_height) * 0.03))
         self.title_font = pygame.font.Font(None, int(min(self.screen_width, self.screen_height) * 0.05))
-        self.start_game()  # Call start_game in the constructor
+        self.state = "welcome"
 
     def initialize_game_variables(self):
         self.state = "welcome"
@@ -131,7 +131,8 @@ class Game:
             self.maze = Maze.generate_fallback(self.settings["maze_height"], self.settings["maze_width"])
 
         # Initialize game objects
-        self.player = Player(self.maze.get_start_position())
+        start_pos = self.maze.get_start_position()
+        self.player = Player((start_pos[1] * CELL_SIZE, start_pos[0] * CELL_SIZE))  # Convert grid position to pixel position
         self.zombies = pygame.sprite.Group()
         self.swords = pygame.sprite.Group()
 
@@ -158,9 +159,9 @@ class Game:
 
     def get_random_empty_position(self):
         while True:
-            x = random.randint(0, self.maze.width - 1)
-            y = random.randint(0, self.maze.height - 1)
-            if not self.maze.is_wall(x, y):
+            x = random.randint(0, self.maze.cols - 1)
+            y = random.randint(0, self.maze.rows - 1)
+            if not self.maze.is_wall(y, x):
                 return x * CELL_SIZE + CELL_SIZE // 2, y * CELL_SIZE + CELL_SIZE // 2
 
     def generate_maze(self, algorithm, width, height):
@@ -169,7 +170,19 @@ class Game:
         
         ctx = self.maze_algorithms[algorithm]
         try:
-            maze_data = ctx.call("generateMaze", width, height)
+            algorithms = {
+                'backtracking': 'backtrackingMaze',
+                'hunt_and_kill': 'huntAndKillMaze',
+                'wilsons': 'wilsonsMaze',
+                'ellers': 'ellersMaze',
+                'kruskals': 'kruskalsMaze',
+                'aldous_broder': 'aldousBroderMaze',
+                'sidewinder': 'sidewinderMaze',
+                'binary_tree': 'binaryTreeMaze',
+                'prims': 'primsMaze',
+                'recursive_division': 'recursiveDivisionMaze'
+            }
+            maze_data = ctx.call(algorithms[algorithm], width, height)
             return maze_data
         except Exception as e:
             print(f"Error generating maze with algorithm '{algorithm}': {str(e)}")
@@ -413,5 +426,90 @@ class Game:
 
     def draw_sword(self):
         self.swords.draw(self.screen)
+
+    def check_game_over(self):
+        if self.player and self.maze:
+            # Check if player has reached the exit
+            player_cell = (self.player.rect.centery // CELL_SIZE, self.player.rect.centerx // CELL_SIZE)
+            if player_cell == self.maze.out_point:
+                self.state = "game_over"
+                self.end_time = time.time()
+                return True
+            
+            # Check if player has collided with a zombie
+            for zombie in self.zombies:
+                if self.player.rect.colliderect(zombie.rect):
+                    if not self.player.has_sword:
+                        self.state = "game_over"
+                        self.end_time = time.time()
+                        return True
+                    else:
+                        # Player has a sword, remove the zombie
+                        self.zombies.remove(zombie)
+                        self.player.has_sword = False
+                        self.score += 10
+        return False
+
+    def update_score(self):
+        # Implement score updating logic here
+        # For example, you could increment the score based on time or actions
+        self.score += 1  # Increment score by 1 each update
+
+    def spawn_zombies(self):
+        if len(self.zombies) < MAX_ZOMBIES and self.settings["zombie_spawning_enabled"]:
+            if random.random() < 1 / (self.settings["zombie_delay"] * FPS):
+                spawn_position = self.get_random_empty_position()
+                new_zombie = Zombie((spawn_position[1] // CELL_SIZE, spawn_position[0] // CELL_SIZE))
+                self.zombies.add(new_zombie)
+
+    def check_collisions(self):
+        # Check collision with zombies
+        for zombie in self.zombies:
+            if self.player.rect.colliderect(zombie.rect):
+                if self.player.has_sword:
+                    self.zombies.remove(zombie)
+                    self.score += 10
+                    self.player.has_sword = False
+                else:
+                    self.state = "game_over"
+                    self.end_time = time.time()
+                    return
+
+        # Check collision with swords
+        for sword in self.swords:
+            if self.player.rect.colliderect(sword.rect):
+                self.swords.remove(sword)
+                self.player.has_sword = True
+                self.score += 5
+
+        # Check if player has reached the exit
+        player_cell = (self.player.rect.centery // CELL_SIZE, self.player.rect.centerx // CELL_SIZE)
+        if player_cell == self.maze.out_point:
+            self.state = "game_over"
+            self.end_time = time.time()
+
+    def handle_player_movement(self, key):
+        if self.player is None or self.maze is None:
+            return
+
+        dx, dy = 0, 0
+        if key == pygame.K_UP:
+            dy = -1
+        elif key == pygame.K_DOWN:
+            dy = 1
+        elif key == pygame.K_LEFT:
+            dx = -1
+        elif key == pygame.K_RIGHT:
+            dx = 1
+
+        new_x = self.player.rect.x + dx * CELL_SIZE
+        new_y = self.player.rect.y + dy * CELL_SIZE
+
+        # Check if the new position is within the maze and not a wall
+        grid_x = new_x // CELL_SIZE
+        grid_y = new_y // CELL_SIZE
+        if 0 <= grid_x < self.maze.cols and 0 <= grid_y < self.maze.rows and not self.maze.is_wall(grid_y, grid_x):
+            self.player.rect.x = new_x
+            self.player.rect.y = new_y
 
 # Additional helper methods as needed

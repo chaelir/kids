@@ -35,9 +35,13 @@ DEFAULT_ZOMBIE_DELAY = parse_int(getenv('DEFAULT_ZOMBIE_DELAY', '1'), 1)
 DEFAULT_ZOMBIE_SPEED_FAST = parse_bool(getenv('DEFAULT_ZOMBIE_SPEED_FAST', 'True'))
 DEFAULT_ZOMBIE_SPAWNING_ENABLED = parse_bool(getenv('DEFAULT_ZOMBIE_SPAWNING_ENABLED', 'True'))
 MAX_ZOMBIES = parse_int(getenv('MAX_ZOMBIES', '1'), 1)
+ZOMBIE_SPEED = parse_int(getenv('ZOMBIE_SPEED', '3'), 3)
+ZOMBIE_SIZE = parse_int(getenv('ZOMBIE_SIZE', '30'), 30)
 
 # Player settings
 DEFAULT_PLAYER_NAME = getenv('DEFAULT_PLAYER_NAME', 'Mario')
+PLAYER_SPEED = parse_int(getenv('PLAYER_SPEED', '5'), 5)
+PLAYER_SIZE = parse_int(getenv('PLAYER_SIZE', '20'), 20)
 
 # Sword settings
 MIN_SWORDS = parse_int(getenv('MIN_SWORDS', '1'), 1)
@@ -74,7 +78,7 @@ PLAYER_WITH_SWORD_IMAGE_PATH = "sworded.jpg"
 # Other constants that were in the original file but not in the env file
 FPS = 60
 CELL_SIZE = TILE_SIZE
-PLAYER_SPEED = 5
+PLAYER_SPEED = 5  # or whatever value you want to use
 PLAYER_SIZE = 20
 ZOMBIE_SPEED = 3
 ZOMBIE_SIZE = 30
