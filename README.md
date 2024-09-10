@@ -12,7 +12,7 @@
 
 ## Git ##
 
-*Download* [https://git-scm.com/download/win](https://git-scm.com/download/win)
+*Download and Install* [https://git-scm.com/download/win](https://git-scm.com/download/win)
 
 ssh-keygen -> git config --user.name "xxx" -> git config --user.email "x@y.z" -> git -T git@github.com
 
