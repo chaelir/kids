@@ -1,16 +1,16 @@
-## Development Tools ##
+# Development Tools #
 
 *Install via Admin*
 
-# VS Code #
+## VS Code ##
 
 *System Installer* [https://code.visualstudio.com/docs/?dv=win64](https://code.visualstudio.com/docs/?dv=win64)
 
-# Cursor IDE #
+## Cursor IDE ##
 
 *Download and Install* [https://www.cursor.com/features](https://www.cursor.com/features)
 
-# Git #
+## Git ##
 
 *Download* [https://www.cursor.com/features](https://git-scm.com/download/win)
 
