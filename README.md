@@ -12,12 +12,9 @@
 
 ## Git ##
 
-*Download* [https://www.cursor.com/features](https://git-scm.com/download/win)
+*Download and Install* [https://git-scm.com/download/win](https://git-scm.com/download/win)
 
-``
-Host github.com
-        IdentityFile ~/.ssh/id_github
-``
+ssh-keygen -> git config --user.name "xxx" -> git config --user.email "x@y.z" -> git -T git@github.com
 
-git clone git@github.com:chaelir/kids.git
+-> git clone git@github.com:chaelir/kids.git
 
