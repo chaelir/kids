@@ -48,7 +48,7 @@ class Zombie:
 
     def update(self):
         if self.is_dying:
-            self.update_bullet()
+            return self.update_bullet()
         else:
             dx = self.game.player.x - self.x
             dy = self.game.player.y - self.y
@@ -57,6 +57,7 @@ class Zombie:
             if distance != 0:
                 self.x += (dx / distance) * self.speed
                 self.y += (dy / distance) * self.speed
+        return True
 
     def start_dying(self):
         self.is_dying = True
@@ -70,9 +71,10 @@ class Zombie:
         if distance > self.bullet_speed:
             self.bullet_pos[0] += (dx / distance) * self.bullet_speed
             self.bullet_pos[1] += (dy / distance) * self.bullet_speed
+            return True
         else:
             self.is_dying = False
-            self.game.remove_zombie(self)
+            return False
 
     def draw(self, screen):
         if self.is_dying:

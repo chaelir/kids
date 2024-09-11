@@ -31,17 +31,18 @@ class Game:
         self.asdf_enabled = True
         self.zxcv_enabled = False
 
-        self.zombie_spawn_rate = 0.01  # Increased spawn rate (1% chance per frame)
+        self.zombie_spawn_rate = 0.01  # 1% chance per frame
         self.max_zombies = 2  # Maximum number of zombies allowed on screen
 
+        print("Game initialized", file=sys.stderr)
+
     def run(self):
+        print("Game started", file=sys.stderr)
         while not self.game_over:
             self.handle_events()
             self.update()
             self.draw()
             self.clock.tick(60)
-            # The following line has been removed:
-            # print(f"Current number of zombies: {len(self.zombies)}", file=sys.stderr)
         self.show_game_over_screen()
         pygame.quit()
 
@@ -55,7 +56,7 @@ class Game:
                     key_pressed = event.unicode.lower()
                     print(f"Alphabetic key pressed: {key_pressed}", file=sys.stderr)  # Debug print
                     print(f"Current zombies: {[z.letter.lower() for z in self.zombies]}", file=sys.stderr)
-                    killed_zombie = self.player.handle_input(key_pressed)
+                    killed_zombie = self.kill_zombie(key_pressed)
                     if killed_zombie:
                         self.score.increase()
                         print(f"Zombie killed with letter: {key_pressed}", file=sys.stderr)  # Debug print
@@ -70,13 +71,17 @@ class Game:
             self.game_over = True
 
         self.player.update()
-        for zombie in self.zombies[:]:  # Use a copy of the list to safely remove zombies
+        zombies_to_remove = []
+        for zombie in self.zombies:
             zombie.update()
-            if zombie.is_dying:
-                continue  # Skip collision check for dying zombies
-            if self.player.collides_with(zombie):
+            if zombie.is_dying and not zombie.update_bullet():
+                zombies_to_remove.append(zombie)
+            elif not zombie.is_dying and self.player.collides_with(zombie):
                 self.game_over = True
-                print("Game over: Player collided with a zombie!", file=sys.stderr)  # Debug print
+                print("Game over: Player collided with a zombie!", file=sys.stderr)
+
+        for zombie in zombies_to_remove:
+            self.remove_zombie(zombie)
         
         self.spawn_zombie()
 
@@ -122,3 +127,11 @@ class Game:
         self.screen.blit(score_text, (self.width // 2 - 100, self.height // 2 + 50))
         pygame.display.flip()
         pygame.time.wait(3000)  # Wait for 3 seconds before quitting
+
+    def kill_zombie(self, key):
+        for zombie in self.zombies:
+            if zombie.letter.lower() == key and not zombie.is_dying:
+                zombie.start_dying()
+                print(f"Zombie {zombie.letter} started dying", file=sys.stderr)
+                return True
+        return False
