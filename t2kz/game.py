@@ -31,8 +31,8 @@ class Game:
         self.asdf_enabled = True
         self.zxcv_enabled = False
 
-        self.zombie_spawn_rate = 0.03  # Increased spawn rate (3% chance per frame)
-        self.max_zombies = 10  # Increased maximum number of zombies allowed on screen
+        self.zombie_spawn_rate = 0.01  # Increased spawn rate (1% chance per frame)
+        self.max_zombies = 2  # Maximum number of zombies allowed on screen
 
     def run(self):
         while not self.game_over:
