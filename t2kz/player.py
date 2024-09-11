@@ -16,10 +16,10 @@ class Player:
     def draw(self, screen):
         # Draw proximity contours
         for radius in self.proximity_circles:
-            pygame.draw.circle(screen, (200, 200, 200), (self.x, self.y), radius, 1)
+            pygame.draw.circle(screen, (100, 100, 100), (int(self.x), int(self.y)), radius, 3)
 
         # Draw player
-        pygame.draw.circle(screen, (0, 0, 255), (self.x, self.y), self.radius)
+        pygame.draw.circle(screen, (0, 0, 255), (int(self.x), int(self.y)), self.radius)
 
     def collides_with(self, zombie):
         distance = ((self.x - zombie.x) ** 2 + (self.y - zombie.y) ** 2) ** 0.5

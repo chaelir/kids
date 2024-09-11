@@ -1,6 +1,7 @@
 import pygame
 import random
 import sys
+import math
 from arena import Arena
 from control_panel import ControlPanel
 from player import Player
@@ -29,6 +30,7 @@ class Game:
         self.score = Score(self)
         
         self.game_over = False
+        self.paused = False
         
         self.qwerty_enabled = False
         self.asdf_enabled = True
@@ -43,7 +45,8 @@ class Game:
         print("Game started", file=sys.stderr)
         while not self.game_over:
             self.handle_events()
-            self.update()
+            if not self.paused:
+                self.update()
             self.draw()
             self.clock.tick(60)
         self.show_game_over_screen()
@@ -55,12 +58,23 @@ class Game:
                 self.game_over = True
             elif event.type == pygame.KEYDOWN:
                 print(f"Key pressed: {pygame.key.name(event.key)}", file=sys.stderr)
-                self.handle_keydown(event)
-            elif event.type == pygame.TEXTINPUT:
+                if event.key == pygame.K_ESCAPE or event.key == pygame.K_SPACE:
+                    self.toggle_pause()
+                elif not self.paused:  # Only handle other keys if not paused
+                    self.handle_keydown(event)
+            elif event.type == pygame.TEXTINPUT and not self.paused:
                 print(f"Text input: {event.text}", file=sys.stderr)
                 self.handle_text_input(event.text)
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 self.control_panel.handle_event(event)
+
+    def toggle_pause(self):
+        self.paused = not self.paused
+        print(f"Game {'paused' if self.paused else 'resumed'}", file=sys.stderr)
+        if self.paused:
+            self.timer.pause()
+        else:
+            self.timer.resume()
 
     def handle_text_input(self, text):
         self.ime_text += text
@@ -126,14 +140,15 @@ class Game:
 
     def draw(self):
         self.screen.fill((255, 255, 255))  # White background
+        pygame.draw.circle(self.screen, (255, 0, 0), (400, 300), 100, 3)  # Test circle
         self.arena.draw(self.screen)
-        self.player.draw(self.screen)
+        self.player.draw(self.screen)  # This will draw both the player and the contours
         for zombie in self.zombies:
             color = self.get_zombie_color(zombie)
             zombie.draw(self.screen, color)
         self.control_panel.draw(self.screen)
         self.timer.draw(self.screen)
-        self.score.draw(self.screen)
+        self.draw_score()  # New method to draw the score
 
         # Draw IME text
         if self.ime_text:
@@ -141,13 +156,34 @@ class Game:
             ime_surf = font.render(f"IME: {self.ime_text}", True, (0, 0, 0))
             self.screen.blit(ime_surf, (10, self.height - 50))
 
+        # Draw pause overlay if the game is paused
+        if self.paused:
+            pause_overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+            pause_overlay.fill((0, 0, 0, 128))  # Semi-transparent black
+            self.screen.blit(pause_overlay, (0, 0))
+            
+            pause_font = pygame.font.Font(None, 72)
+            pause_text = pause_font.render("PAUSED", True, (255, 255, 255))
+            pause_rect = pause_text.get_rect(center=(self.width // 2, self.height // 2))
+            self.screen.blit(pause_text, pause_rect)
+
         pygame.display.flip()
+
+    def draw_score(self):
+        score_text = f"Score: {self.score.value}"
+        font = pygame.font.Font(None, 36)
+        text_surface = font.render(score_text, True, (0, 0, 0))
+        text_rect = text_surface.get_rect()
+        text_rect.topright = (self.width - 10, 10)  # Position in the top-right corner
+        self.screen.blit(text_surface, text_rect)
 
     def spawn_zombie(self):
         if len(self.zombies) < self.max_zombies and random.random() < self.zombie_spawn_rate:
             new_zombie = Zombie(self)
+            spawn_x, spawn_y = self.generate_spawn_position()
+            new_zombie.x, new_zombie.y = spawn_x, spawn_y
             self.zombies.append(new_zombie)
-            print(f"New zombie spawned with letter: {new_zombie.letter}", file=sys.stderr)  # Debug print
+            print(f"New zombie spawned with letter: {new_zombie.letter} at position ({spawn_x}, {spawn_y})", file=sys.stderr)
 
     def remove_zombie(self, zombie):
         if zombie in self.zombies:
@@ -178,3 +214,16 @@ class Game:
         if zombie.is_dying:
             return (255, 165, 0)  # Orange color for dying zombies
         return (0, 255, 0)  # Green color for active zombies
+
+    def generate_spawn_position(self):
+        angle = random.uniform(0, 2 * math.pi)
+        distance = random.uniform(self.player.proximity_circles[-1], 
+                                  math.sqrt(self.width**2 + (self.height - 100)**2) / 2)
+        spawn_x = self.player.x + distance * math.cos(angle)
+        spawn_y = self.player.y + distance * math.sin(angle)
+        
+        # Ensure the zombie spawns within the visible area
+        spawn_x = max(0, min(spawn_x, self.width))
+        spawn_y = max(0, min(spawn_y, self.height - 100))
+        
+        return spawn_x, spawn_y
