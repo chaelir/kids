@@ -181,5 +181,399 @@ I found Cursor Composer's shortcuts and keymapping can sometimes be unintuitive 
 [2]: https://github.com/composer/composer/blob/main/doc/articles/troubleshooting.md
 
 
+# Class 1: Introduction to Microsoft Family and GitHub
+
+## 0. How to use Microsoft Family
+
+Microsoft Family is a suite of services that allows you to manage and protect your family's digital life. Here's a brief overview of how to use it:
+
+1. Create Microsoft accounts:
+   - Go to https://account.microsoft.com/
+   - Click on "Create a Microsoft account"
+   - Follow the prompts to set up accounts for each family member
+
+2. Set up Microsoft Family:
+   - Visit https://account.microsoft.com/family/
+   - Sign in with your Microsoft account
+   - Click "Add a family member" to invite others
+   - Customize settings for each family member
+
+3. Manage family settings:
+   - Screen time limits
+   - Content filters
+   - App and game restrictions
+   - Activity reporting
+
+## 1. Homework: Register GitHub Accounts
+
+Status: Completed
+
+The team has successfully registered GitHub accounts under the organization:
+https://github.com/wxyzteam
+
+Steps taken:
+1. Each team member visited https://github.com/
+2. Clicked on "Sign up" and followed the registration process
+3. Verified email addresses
+4. Joined the wxyzteam organization (invitation process)
+
+Next steps:
+- Familiarize with GitHub interface
+- Set up two-factor authentication for enhanced security
+- Create and customize personal profiles
+- Explore GitHub features like repositories, issues, and pull requests
+
+Remember to use these accounts responsibly and follow best practices for version control and collaborative development.
+
+
+## 2. Learn to Use Microsoft Teams, Screen Sharing, and Take Control
+
+Microsoft Teams is a powerful collaboration platform that allows for efficient communication and teamwork. Here's a guide on how to use Teams, share your screen, and take control during meetings:
+
+### Setting up Microsoft Teams
+
+1. Download and install Microsoft Teams:
+   - Visit https://www.microsoft.com/en-us/microsoft-teams/download-app
+   - Choose the appropriate version for your operating system
+   - Follow the installation instructions
+
+2. Sign in to Teams:
+   - Use your Microsoft account credentials
+   - If your organization uses Microsoft 365, use your work or school account
+
+### Using Microsoft Teams
+
+1. Navigate the interface:
+   - Teams: View and join your teams
+   - Chat: Start one-on-one or group conversations
+   - Calendar: Schedule and join meetings
+   - Files: Access and share documents
+
+2. Join or create a team:
+   - Click "Join or create a team" in the Teams tab
+   - Choose to create a new team or join with a code
+
+### Screen Sharing in Teams
+
+1. Start or join a meeting in Teams
+
+2. Share your screen:
+   - Click the "Share content" button (rectangle with an arrow)
+   - Choose what you want to share:
+     - Entire screen
+     - Specific window
+     - PowerPoint file
+     - Whiteboard
+
+3. Stop sharing:
+   - Click "Stop sharing" at the top of the screen
+
+### Taking Control in Teams
+
+1. Request control:
+   - When someone is sharing their screen, click "Request control"
+   - Wait for the presenter to approve your request
+
+2. Give control:
+   - While sharing your screen, you can give control to others
+   - Click "Give control" and select the participant
+
+3. Take back control:
+   - Click "Take back control" to regain sole control of your shared screen
+
+Practice these skills with your team to become proficient in using Microsoft Teams for collaboration and screen sharing. This will greatly enhance your ability to work together effectively on your projects.
+
+
+
+## Class 2.1: Fix Voice Access Input
+
+Voice Access is an accessibility feature that allows users to control their device using voice commands. Here's how to troubleshoot and fix common Voice Access input issues:
+
+1. Check microphone settings:
+   - Ensure your microphone is properly connected and selected as the default input device
+   - Test the microphone in your device's sound settings
+
+2. Update Voice Access:
+   - Open Google Play Store
+   - Search for "Voice Access"
+   - If an update is available, click "Update"
+
+3. Retrain the voice model:
+   - Open Voice Access settings
+   - Go to "Voice model"
+   - Select "Retrain voice model"
+
+4. Clear Voice Access data:
+   - Go to Settings > Apps > Voice Access
+   - Tap "Storage"
+   - Select "Clear data" and "Clear cache"
+
+5. Check for conflicts:
+   - Disable other voice-related apps or assistants temporarily
+   - Test Voice Access to see if the issue is resolved
+
+If problems persist, contact your device manufacturer or Google support for further assistance.
+
+## Class 2.2: Fork a Repo, Sync Fork, Push Codes to Fork, and Create Pull Request
+
+1. Fork a repository:
+   - Navigate to the original repository on GitHub
+   - Click the "Fork" button in the top-right corner
+   - Select your account to create the fork
+
+2. Clone your forked repository:
+   ```
+   git clone https://github.com/your-username/repository-name.git
+   cd repository-name
+   ```
+
+3. Add the original repository as an upstream remote:
+   ```
+   git remote add upstream https://github.com/original-owner/repository-name.git
+   ```
+
+4. Sync your fork with the original repository:
+   ```
+   git fetch upstream
+   git checkout main
+   git merge upstream/main
+   ```
+
+5. Make changes and push to your fork:
+   ```
+   git add .
+   git commit -m "Description of changes"
+   git push origin main
+   ```
+
+6. Create a pull request:
+   - Go to your forked repository on GitHub
+   - Click "Pull request"
+   - Select the branch with your changes
+   - Add a title and description
+   - Click "Create pull request"
+
+## Class 2.3: Read Outlook Emails
+
+1. Open Outlook:
+   - Launch the Outlook application or go to outlook.com
+
+2. Navigate to your inbox:
+   - Click on "Inbox" in the left sidebar
+
+3. Read emails:
+   - Click on an email to open and read its contents
+   - Use the arrow keys or scroll to move through the email
+
+4. Organize emails:
+   - Use folders to categorize emails
+   - Right-click on an email and select "Move to" to organize
+
+5. Search for specific emails:
+   - Use the search bar at the top of the Outlook window
+   - Enter keywords, sender names, or dates to find specific emails
+
+6. Set up rules for automatic organization:
+   - Go to Settings > View all Outlook settings
+   - Select "Rules" and click "Add new rule"
+   - Define conditions and actions for automatic email handling
+
+7. Use focused inbox:
+   - Enable Focused Inbox in Outlook settings
+   - Important emails will appear in the "Focused" tab
+   - Less important emails will be in the "Other" tab
+
+Practice these techniques to efficiently manage and read your Outlook emails, improving your productivity and email organization.
+
+
+## Class 3.1: How to Write a Game Specification
+
+Writing a clear and comprehensive game specification is crucial for successful game development. Here's a guide on how to write an effective game specification:
+
+1. Game Overview:
+   - Title: Choose a catchy, descriptive name for your game
+   - Genre: Specify the game's category (e.g., puzzle, action, strategy)
+   - Target Audience: Define the intended age group and player type
+   - Platform: List the platforms the game will be available on (e.g., mobile, PC, console)
+
+2. Game Concept:
+   - Core Gameplay: Describe the main mechanics and objectives
+   - Unique Selling Points: Highlight what makes your game stand out
+
+3. Game Mechanics:
+   - Player Controls: Explain how the player interacts with the game
+   - Rules: Define the basic rules and constraints
+   - Scoring System: Describe how points are earned and tracked
+   - Progression: Outline how the player advances through the game
+
+4. Game World:
+   - Setting: Describe the game's environment and atmosphere
+   - Characters: List and describe main characters or entities
+   - Story (if applicable): Provide a brief narrative overview
+
+5. Visual and Audio Design:
+   - Art Style: Describe the overall visual aesthetic
+   - Sound Design: Outline the audio elements (music, sound effects)
+
+6. User Interface:
+   - Menus: List and describe main menu options
+   - HUD: Explain what information is displayed during gameplay
+
+7. Technical Specifications:
+   - Engine: Specify the game engine or framework to be used
+   - Minimum System Requirements: List hardware and software needs
+
+8. Development Roadmap:
+   - Milestones: Outline key development stages
+   - Timeline: Provide estimated completion dates for each milestone
+
+9. Monetization (if applicable):
+   - Business Model: Describe how the game will generate revenue
+   - In-game Purchases: List any planned microtransactions
+
+Remember to keep your specification clear, concise, and organized. Use diagrams, sketches, or mockups where appropriate to illustrate your ideas.
+
+## Class 3.2: Converting a Poki.com Game into a Project Description
+
+For this exercise, let's convert the popular Poki.com game "Subway Surfers" into a project description:
+
+Project: Urban Dash
+
+Game Overview:
+- Title: Urban Dash
+- Genre: Endless Runner
+- Target Audience: Ages 8+ who enjoy fast-paced, casual games
+- Platform: Mobile (iOS and Android)
+
+Game Concept:
+- Core Gameplay: Players control a character running through a vibrant city environment, dodging obstacles, collecting coins, and using power-ups to achieve high scores.
+- Unique Selling Points: Dynamic environment changes, character customization, and social features for competing with friends.
+
+Game Mechanics:
+- Player Controls: Swipe left/right to change lanes, swipe up to jump, swipe down to roll
+- Rules: Run as far as possible without hitting obstacles; game ends upon collision
+- Scoring System: Distance traveled and coins collected contribute to the score
+- Progression: Unlock new characters, outfits, and power-ups as you play
+
+Game World:
+- Setting: Colorful, stylized urban environments (city streets, subways, rooftops)
+- Characters: Multiple unlockable characters with unique abilities
+- Story: Light narrative elements about escaping from a grumpy security guard
+
+Visual and Audio Design:
+- Art Style: Bright, cartoonish 3D graphics
+- Sound Design: Upbeat background music, satisfying sound effects for actions and collectibles
+
+User Interface:
+- Menus: Main menu, character selection, upgrades, daily challenges, leaderboards
+- HUD: Score, coin count, power-up indicators, distance traveled
+
+Technical Specifications:
+- Engine: Unity 3D
+- Minimum Requirements: iOS 11.0 or Android 5.0, 2GB RAM
+
+Development Roadmap:
+- Milestone 1: Core gameplay mechanics (2 months)
+- Milestone 2: Level design and obstacles (1 month)
+- Milestone 3: Character design and animations (1 month)
+- Milestone 4: UI/UX and menus (1 month)
+- Milestone 5: Power-ups and special abilities (1 month)
+- Milestone 6: Polish, optimization, and testing (2 months)
+
+Monetization:
+- Business Model: Free-to-play with in-app purchases
+- In-game Purchases: Character skins, power-up boosters, coin packs
+
+This project description provides a solid foundation for developing a game similar to Subway Surfers while adding unique elements to make it stand out in the market.
+
+## Class 3.3: Reducing a Poki.com Game into a Pygame Version
+
+Simplified Urban Dash (Pygame Version)
+
+Game Overview:
+- Title: Urban Dash
+- Genre: 2D Side-scrolling Runner
+- Platform: Desktop (Windows, macOS, Linux)
+
+Game Concept:
+- Core Gameplay: Player controls a character running through a simple city environment, jumping over obstacles and collecting coins.
+
+Game Mechanics:
+- Player Controls: Spacebar to jump
+- Rules: Run as far as possible without hitting obstacles; game ends upon collision
+- Scoring System: Distance traveled and coins collected contribute to the score
+
+Game World:
+- Setting: Simple 2D city background with scrolling effect
+- Characters: One main character sprite
+
+Visual and Audio Design:
+- Art Style: Simple 2D pixel art
+- Sound Design: Basic background music and sound effects
+
+User Interface:
+- HUD: Score, distance traveled
+
+Technical Specifications:
+- Engine: Pygame
+- Language: Python
+
+Development Roadmap:
+- Milestone 1: Set up Pygame and create main game loop (1 week)
+- Milestone 2: Implement player movement and jumping (1 week)
+- Milestone 3: Add obstacles and collision detection (1 week)
+- Milestone 4: Implement scrolling background and parallax effect (1 week)
+- Milestone 5: Add coin collection and scoring system (1 week)
+- Milestone 6: Polish graphics, add sound effects, and optimize performance (1 week)
+
+This simplified version focuses on the core gameplay elements that can be easily implemented using Pygame. It retains the essence of an endless runner game while being more manageable for a smaller development team or individual programmer.
+
+
+## Class 3.4: Using Composer to Generate the Game
+
+In this class, we'll use Cursor Composer to generate the core structure of our simplified Urban Dash game using Pygame. We'll break down the process into steps and use Composer to help us create the initial code.
+
+Step 1: Set up the basic game structure
+
+Let's start by creating the main game file and setting up the basic Pygame structure. We'll use Composer to generate this code:
+
+Step 2: Implement player movement and jumping
+
+Next, we'll add the player movement and jumping mechanics to our game. We'll use Composer to generate this code:
+
+Step 3: Add obstacles and collision detection
+
+Now, let's add some obstacles to our game and implement collision detection. We'll use Composer to generate this code:  
+
+Step 4: Implement scrolling background and parallax effect
+
+Let's add a scrolling background and parallax effect to our game. We'll use Composer to generate this code:
+
+Step 5: Add coin collection and scoring system
+
+Now, let's add coin collection and a scoring system to our game. We'll use Composer to generate this code:
+
+Step 6: Polish graphics, add sound effects, and optimize performance
+
+Let's polish the graphics, add sound effects, and optimize the performance of our game. We'll use Composer to generate this code:
+
+Step 7: Test and refine the game
+
+Let's test the game and refine it based on the feedback. We'll use Composer to generate this code:
+
+Step 8: Document the code
+
+Let's document the code to make it easier for others to understand. We'll use Composer to generate this code:
+
+Step 9: Share the game
+
+Let's share the game with others. We'll use Composer to generate this code:
+
+Step 10: Celebrate!
+
+Let's celebrate our success! We've created a simple yet fun game using Pygame and Composer. We'll use Composer to generate this code:
+
+
+
 
 
