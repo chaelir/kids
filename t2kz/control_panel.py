@@ -7,9 +7,15 @@ class ControlPanel:
         self.width = game.width
         self.y = game.height - self.height
 
-        self.qwerty_button = pygame.Rect(10, self.y + 10, 100, 30)
-        self.asdf_button = pygame.Rect(120, self.y + 10, 100, 30)
-        self.zxcv_button = pygame.Rect(230, self.y + 10, 100, 30)
+        button_width = 100
+        button_height = 30
+        button_margin = 10
+
+        self.qwerty_button = pygame.Rect(button_margin, self.y + button_margin, button_width, button_height)
+        self.asdf_button = pygame.Rect(2 * button_margin + button_width, self.y + button_margin, button_width, button_height)
+        self.zxcv_button = pygame.Rect(3 * button_margin + 2 * button_width, self.y + button_margin, button_width, button_height)
+        self.restart_button = pygame.Rect(4 * button_margin + 3 * button_width, self.y + button_margin, button_width, button_height)
+        self.quit_button = pygame.Rect(5 * button_margin + 4 * button_width, self.y + button_margin, button_width, button_height)
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -19,6 +25,10 @@ class ControlPanel:
                 self.game.toggle_keyboard_section('asdf')
             elif self.zxcv_button.collidepoint(event.pos):
                 self.game.toggle_keyboard_section('zxcv')
+            elif self.restart_button.collidepoint(event.pos):
+                self.game.__init__()  # Restart the game
+            elif self.quit_button.collidepoint(event.pos):
+                self.game.game_over = True
 
     def draw(self, screen):
         pygame.draw.rect(screen, (150, 150, 150), (0, self.y, self.width, self.height))
@@ -26,6 +36,8 @@ class ControlPanel:
         self.draw_button(screen, self.qwerty_button, "QWERTY", self.game.qwerty_enabled)
         self.draw_button(screen, self.asdf_button, "ASDF", self.game.asdf_enabled)
         self.draw_button(screen, self.zxcv_button, "ZXCV", self.game.zxcv_enabled)
+        self.draw_button(screen, self.restart_button, "Restart", True)
+        self.draw_button(screen, self.quit_button, "Quit", True)
 
     def draw_button(self, screen, rect, text, enabled):
         color = (0, 255, 0) if enabled else (255, 0, 0)
