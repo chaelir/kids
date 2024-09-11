@@ -18,3 +18,6 @@ ssh-keygen -> git config --user.name "xxx" -> git config --user.email "x@y.z" ->
 
 -> git clone git@github.com:chaelir/kids.git
 
+## Voice Access ##
+settings -> voice access on -> shift + ctrl + c to use.
+
