@@ -7,8 +7,8 @@ class ControlPanel:
         self.width = game.width
         self.y = game.height - self.height
 
-        button_width = 100
-        button_height = 30
+        button_width = 120
+        button_height = 40
         button_margin = 10
 
         self.qwerty_button = pygame.Rect(button_margin, self.y + button_margin, button_width, button_height)
@@ -19,15 +19,16 @@ class ControlPanel:
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if self.qwerty_button.collidepoint(event.pos):
+            mouse_pos = pygame.mouse.get_pos()
+            if self.qwerty_button.collidepoint(mouse_pos):
                 self.game.toggle_keyboard_section('qwerty')
-            elif self.asdf_button.collidepoint(event.pos):
+            elif self.asdf_button.collidepoint(mouse_pos):
                 self.game.toggle_keyboard_section('asdf')
-            elif self.zxcv_button.collidepoint(event.pos):
+            elif self.zxcv_button.collidepoint(mouse_pos):
                 self.game.toggle_keyboard_section('zxcv')
-            elif self.restart_button.collidepoint(event.pos):
+            elif self.restart_button.collidepoint(mouse_pos):
                 self.game.__init__()  # Restart the game
-            elif self.quit_button.collidepoint(event.pos):
+            elif self.quit_button.collidepoint(mouse_pos):
                 self.game.game_over = True
 
     def draw(self, screen):
@@ -42,7 +43,7 @@ class ControlPanel:
     def draw_button(self, screen, rect, text, enabled):
         color = (0, 255, 0) if enabled else (255, 0, 0)
         pygame.draw.rect(screen, color, rect)
-        font = pygame.font.Font(None, 24)
+        font = pygame.font.Font(None, 28)
         text_surf = font.render(text, True, (0, 0, 0))
         text_rect = text_surf.get_rect(center=rect.center)
         screen.blit(text_surf, text_rect)

@@ -2,17 +2,19 @@ import pygame
 import random
 import math
 import sys
+import time
 
 class Zombie:
     def __init__(self, game):
         self.game = game
         self.radius = 20  # Increased radius for better visibility
         self.spawn_position()
-        self.speed = random.uniform(0.1, 0.3)  # Further reduced speed range
-        self.letter = self.generate_letter()
+        self.speed = random.uniform(0.5, 1.0)  # Slower speed range
+        self.letter = self.generate_letter()  # Store letter as generated (uppercase)
         self.is_dying = False
         self.bullet_pos = None
         self.bullet_speed = 3  # Reduced speed for better visibility
+        self.creation_time = time.time()
         print(f"New zombie created with letter: {self.letter}", file=sys.stderr)
 
     def spawn_position(self):
@@ -33,11 +35,11 @@ class Zombie:
     def generate_letter(self):
         available_letters = ""
         if self.game.qwerty_enabled:
-            available_letters += "qwertyuiop"
+            available_letters += "QWERTYUIOP"
         if self.game.asdf_enabled:
-            available_letters += "asdfghjkl"
+            available_letters += "ASDFGHJKL"
         if self.game.zxcv_enabled:
-            available_letters += "zxcvbnm"
+            available_letters += "ZXCVBNM"
         
         if not available_letters:
             print("Warning: No keyboard rows enabled!")
@@ -67,7 +69,7 @@ class Zombie:
 
     def update_bullet(self):
         if not self.is_dying or self.bullet_pos is None:
-            return True
+            return False
 
         dx = self.x - self.bullet_pos[0]
         dy = self.y - self.bullet_pos[1]
@@ -76,19 +78,20 @@ class Zombie:
         if distance > self.bullet_speed:
             self.bullet_pos[0] += (dx / distance) * self.bullet_speed
             self.bullet_pos[1] += (dy / distance) * self.bullet_speed
-            print(f"Bullet position updated: {self.bullet_pos}", file=sys.stderr)
-            return True
-        else:
-            self.is_dying = False
-            print(f"Zombie {self.letter} finished dying animation", file=sys.stderr)
             return False
+        else:
+            print(f"Bullet hit Zombie {self.letter}", file=sys.stderr)
+            return True
 
-    def draw(self, screen):
-        if self.is_dying and self.bullet_pos:
-            pygame.draw.circle(screen, (255, 0, 0), (int(self.bullet_pos[0]), int(self.bullet_pos[1])), 5)
-        
-        pygame.draw.circle(screen, (0, 255, 0), (int(self.x), int(self.y)), self.radius)
+    def bullet_hit(self):
+        return self.is_dying and self.update_bullet()
+
+    def draw(self, screen, color):
+        pygame.draw.circle(screen, color, (int(self.x), int(self.y)), self.radius)
         font = pygame.font.Font(None, 36)  # Increased font size
         text = font.render(self.letter, True, (0, 0, 0))
         text_rect = text.get_rect(center=(int(self.x), int(self.y)))
         screen.blit(text, text_rect)
+
+        if self.is_dying and self.bullet_pos:
+            pygame.draw.circle(screen, (255, 0, 0), (int(self.bullet_pos[0]), int(self.bullet_pos[1])), 5)

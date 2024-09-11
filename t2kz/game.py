@@ -18,6 +18,9 @@ class Game:
         self.clock = pygame.time.Clock()
         self.font = pygame.font.Font(None, 36)
         
+        pygame.key.set_repeat(200, 25)  # Enable key repeat
+        self.ime_text = ""
+        
         self.arena = Arena(self)
         self.control_panel = ControlPanel(self)
         self.player = Player(self)
@@ -31,8 +34,8 @@ class Game:
         self.asdf_enabled = True
         self.zxcv_enabled = False
 
-        self.zombie_spawn_rate = 0.01  # 1% chance per frame
-        self.max_zombies = 2  # Maximum number of zombies allowed on screen
+        self.zombie_spawn_rate = 0.02  # 2% chance per frame
+        self.max_zombies = 5  # Increased maximum number of zombies
 
         print("Game initialized", file=sys.stderr)
 
@@ -45,25 +48,60 @@ class Game:
             self.clock.tick(60)
         self.show_game_over_screen()
         pygame.quit()
-
+        
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.game_over = True
             elif event.type == pygame.KEYDOWN:
-                print(f"Key pressed: {pygame.key.name(event.key)}", file=sys.stderr)  # Debug print
-                if event.unicode.isalpha():
-                    key_pressed = event.unicode.lower()
-                    print(f"Alphabetic key pressed: {key_pressed}", file=sys.stderr)  # Debug print
-                    print(f"Current zombies: {[z.letter.lower() for z in self.zombies]}", file=sys.stderr)
-                    killed_zombie = self.kill_zombie(key_pressed)
-                    if killed_zombie:
-                        self.score.increase()
-                        print(f"Zombie killed with letter: {key_pressed}", file=sys.stderr)  # Debug print
-                    else:
-                        print(f"No zombie killed with letter: {key_pressed}", file=sys.stderr)  # Debug print
-                    print(f"Remaining zombies: {[z.letter.lower() for z in self.zombies]}", file=sys.stderr)  # Debug print
-            self.control_panel.handle_event(event)
+                print(f"Key pressed: {pygame.key.name(event.key)}", file=sys.stderr)
+                self.handle_keydown(event)
+            elif event.type == pygame.TEXTINPUT:
+                print(f"Text input: {event.text}", file=sys.stderr)
+                self.handle_text_input(event.text)
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                self.control_panel.handle_event(event)
+
+    def handle_text_input(self, text):
+        self.ime_text += text
+        print(f"Current IME text: {self.ime_text}", file=sys.stderr)
+        if len(self.ime_text) == 1:
+            self.attempt_kill_zombie(self.ime_text)
+            self.ime_text = ""
+
+    def handle_keydown(self, event):
+        if event.key == pygame.K_RETURN:
+            if self.ime_text:
+                self.attempt_kill_zombie(self.ime_text)
+                self.ime_text = ""
+        elif event.key == pygame.K_BACKSPACE:
+            self.ime_text = self.ime_text[:-1]
+        elif event.unicode.isalpha():
+            key_pressed = event.unicode.lower()
+            self.attempt_kill_zombie(key_pressed)
+
+    def attempt_kill_zombie(self, key):
+        print(f"Attempting to kill zombie with key: {key}", file=sys.stderr)
+        if self.kill_zombie(key):
+            self.score.increase()
+
+    def kill_zombie(self, key):
+        print(f"  Kill Zombie: Checking for zombie with letter '{key}'", file=sys.stderr)
+        key_lower = key.lower()
+        matching_zombies = [
+            zombie for zombie in self.zombies
+            if zombie.letter.lower() == key_lower and not zombie.is_dying
+        ]
+        
+        if matching_zombies:
+            # Sort matching zombies by distance to player (closest first)
+            closest_zombie = min(matching_zombies, key=lambda z: self.player.distance_to(z))
+            closest_zombie.start_dying()
+            print(f"    Zombie {closest_zombie.letter} started dying", file=sys.stderr)
+            return True
+        
+        print(f"  Kill Zombie: No matching zombie found for letter '{key}'", file=sys.stderr)
+        return False
 
     def update(self):
         self.timer.update()
@@ -74,9 +112,10 @@ class Game:
         zombies_to_remove = []
         for zombie in self.zombies:
             zombie.update()
-            if zombie.is_dying and not zombie.update_bullet():
-                zombies_to_remove.append(zombie)
-            elif not zombie.is_dying and self.player.collides_with(zombie):
+            if zombie.is_dying:
+                if zombie.bullet_hit():
+                    zombies_to_remove.append(zombie)
+            elif self.player.collides_with(zombie):
                 self.game_over = True
                 print("Game over: Player collided with a zombie!", file=sys.stderr)
 
@@ -90,10 +129,17 @@ class Game:
         self.arena.draw(self.screen)
         self.player.draw(self.screen)
         for zombie in self.zombies:
-            zombie.draw(self.screen)
+            color = self.get_zombie_color(zombie)
+            zombie.draw(self.screen, color)
         self.control_panel.draw(self.screen)
         self.timer.draw(self.screen)
         self.score.draw(self.screen)
+
+        # Draw IME text
+        if self.ime_text:
+            font = pygame.font.Font(None, 36)
+            ime_surf = font.render(f"IME: {self.ime_text}", True, (0, 0, 0))
+            self.screen.blit(ime_surf, (10, self.height - 50))
 
         pygame.display.flip()
 
@@ -106,9 +152,9 @@ class Game:
     def remove_zombie(self, zombie):
         if zombie in self.zombies:
             self.zombies.remove(zombie)
-            print(f"Zombie {zombie.letter} removed from the game", file=sys.stderr)  # Debug print
+            print(f"Zombie {zombie.letter} removed from the game", file=sys.stderr)
         else:
-            print(f"Zombie {zombie.letter} not found in the game's zombie list", file=sys.stderr)  # Debug print
+            print(f"Warning: Zombie {zombie.letter} not found in the game's zombie list", file=sys.stderr)
 
     def toggle_keyboard_section(self, section):
         if section == 'qwerty':
@@ -128,10 +174,7 @@ class Game:
         pygame.display.flip()
         pygame.time.wait(3000)  # Wait for 3 seconds before quitting
 
-    def kill_zombie(self, key):
-        for zombie in self.zombies:
-            if zombie.letter.lower() == key and not zombie.is_dying:
-                zombie.start_dying()
-                print(f"Zombie {zombie.letter} started dying", file=sys.stderr)
-                return True
-        return False
+    def get_zombie_color(self, zombie):
+        if zombie.is_dying:
+            return (255, 165, 0)  # Orange color for dying zombies
+        return (0, 255, 0)  # Green color for active zombies
