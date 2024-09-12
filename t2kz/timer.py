@@ -4,11 +4,15 @@ import time
 class Timer:
     def __init__(self, game, duration):
         self.game = game
-        self.duration = duration
+        self.initial_duration = duration
+        self.reset()
+
+    def reset(self):
+        self.duration = self.initial_duration
         self.start_time = None
         self.paused_time = 0
         self.is_paused = False
-        self.time_left = duration
+        self.time_left = self.duration
 
     def start(self):
         self.start_time = time.time()
