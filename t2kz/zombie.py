@@ -9,8 +9,9 @@ class Zombie:
         self.game = game
         self.radius = 20  # Increased radius for better visibility
         self.spawn_position()
-        self.speed = random.uniform(0.5, 1.0)  # Slower speed range
-        self.letter = self.generate_letter()  # Store letter as generated (uppercase)
+        self.base_speed = random.uniform(0.5, 1.0)
+        self.current_speed = self.base_speed
+        self.letter = self.generate_letter()  # Now generates lowercase letter
         self.is_dying = False
         self.bullet_pos = None
         self.bullet_speed = 3  # Reduced speed for better visibility
@@ -35,11 +36,11 @@ class Zombie:
     def generate_letter(self):
         available_letters = ""
         if self.game.qwerty_enabled:
-            available_letters += "QWERTYUIOP"
+            available_letters += "qwertyuiop"
         if self.game.asdf_enabled:
-            available_letters += "ASDFGHJKL"
+            available_letters += "asdfghjkl"
         if self.game.zxcv_enabled:
-            available_letters += "ZXCVBNM"
+            available_letters += "zxcvbnm"
         
         if not available_letters:
             print("Warning: No keyboard rows enabled!")
@@ -48,6 +49,10 @@ class Zombie:
         chosen_letter = random.choice(available_letters)
         print(f"Generated letter for zombie: {chosen_letter}")
         return chosen_letter
+
+    def update_speed(self, new_base_speed):
+        speed_ratio = new_base_speed / self.base_speed
+        self.current_speed = self.base_speed * speed_ratio
 
     def update(self):
         if self.is_dying:
@@ -58,8 +63,8 @@ class Zombie:
             distance = math.sqrt(dx**2 + dy**2)
             
             if distance != 0:
-                self.x += (dx / distance) * self.speed
-                self.y += (dy / distance) * self.speed
+                self.x += (dx / distance) * self.current_speed
+                self.y += (dy / distance) * self.current_speed
         return True
 
     def start_dying(self):

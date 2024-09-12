@@ -5,11 +5,17 @@ class Timer:
     def __init__(self, game, duration):
         self.game = game
         self.duration = duration
-        self.start_time = time.time()
+        self.start_time = None
         self.paused_time = 0
         self.is_paused = False
+        self.time_left = duration
+
+    def start(self):
+        self.start_time = time.time()
 
     def update(self):
+        if self.start_time is None:
+            return
         if not self.is_paused:
             self.time_left = max(0, self.duration - (time.time() - self.start_time - self.paused_time))
 
