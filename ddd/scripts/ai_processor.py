@@ -104,13 +104,13 @@ def identify_sticky_entries(entries_dir: str = 'entries') -> List[str]:
     
     return list(set(sticky_entries))  # Remove duplicates
 
-def update_homepage(entries_dir: str = 'entries', homepage_path: str = 'index.md'):
+def update_homepage(entries_dir: str = 'entries', homepage_path: str = 'README.md'):
     """
     Update the homepage with recent entries, sticky entries, and tags.
     
     Args:
     entries_dir (str): Directory containing diary entries.
-    homepage_path (str): Path to the homepage file.
+    homepage_path (str): Path to the homepage file (now README.md).
     """
     # Get sticky entries
     sticky_entries = identify_sticky_entries(entries_dir)
@@ -131,12 +131,12 @@ def update_homepage(entries_dir: str = 'entries', homepage_path: str = 'index.md
     
     content += "## Sticky Diaries\n"
     for entry in sticky_entries:
-        content += f"- [{entry[:-3]}]({os.path.join(entries_dir, entry)})\n"
+        content += f"- [{entry[:-3]}]({entries_dir}/{entry})\n"
     content += "\n"
     
     content += "## Chronicle Diaries\n"
     for entry in recent_entries:
-        content += f"- [{entry[:-3]}]({os.path.join(entries_dir, entry)})\n"
+        content += f"- [{entry[:-3]}]({entries_dir}/{entry})\n"
     content += "\n"
     
     content += "## Tagged Diaries\n"
