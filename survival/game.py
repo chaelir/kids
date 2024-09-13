@@ -62,14 +62,28 @@ class Hazard:
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.active = True  # New attribute to track if the hazard is still active
+        self.active = True
 
-    def move(self):
-        dx = random.choice([-1, 0, 1])
-        dy = random.choice([-1, 0, 1])
-        new_x = (self.x + dx) % GRID_WIDTH
-        new_y = (self.y + dy) % GRID_HEIGHT
-        self.x, self.y = new_x, new_y
+    def move(self, player_x, player_y):
+        if not self.active:
+            return
+
+        # Calculate direction towards the player
+        dx = player_x - self.x
+        dy = player_y - self.y
+
+        # Normalize the direction
+        length = max(abs(dx), abs(dy), 1)
+        dx = dx / length
+        dy = dy / length
+
+        # Move towards the player
+        new_x = self.x + (1 if dx > 0 else -1 if dx < 0 else 0)
+        new_y = self.y + (1 if dy > 0 else -1 if dy < 0 else 0)
+
+        # Ensure the hazard stays within the grid
+        self.x = max(0, min(GRID_WIDTH - 1, new_x))
+        self.y = max(0, min(GRID_HEIGHT - 1, new_y))
 
     def draw(self):
         if self.active:
@@ -197,7 +211,7 @@ class Game:
             if self.hazard_move_timer >= 1.0:  # Move hazards every second
                 for hazard in self.hazards:
                     if hazard.active:
-                        hazard.move()
+                        hazard.move(self.player.x, self.player.y)
                 self.hazard_move_timer = 0
 
             # Decrease stats over time
