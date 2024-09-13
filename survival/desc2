@@ -1,0 +1,9 @@
+      survival_game.py
+The player (P) can move using W, A, S, D keys.
+Food (F) and Water (W) resources randomly appear on the grid.
+The player's health, food, and water levels are displayed.
+The game continues until the player's health reaches 0.
+water decrease 0.8 point per unit
+food decrease 0.6 point per unit
+if one of the resources is not zero,but the other is zero,health decreases by 0.5 points per unit.
+if both resources are at zero,health decreases by 1 points per unit.

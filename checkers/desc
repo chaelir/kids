@@ -1,0 +1,59 @@
+
+Project Objective:
+    Develop a classic Checkers game using Pygame
+
+Game Framework:
+    - Pygame
+    - No external images or sounds, or assets
+    - only implemnting the game accoring to this description.
+    - no animations or sound effects.
+
+Game Layout:
+    - Game board: 8x8 grid, alternating light and dark squares
+    - Piece display: Red and Black circular pieces
+    - Turn indicator: Shows which player's turn it is
+    - Captured pieces counter: Displays the number of pieces captured by each player
+    - Game status: Shows game state (e.g., "In Progress", "Red Wins", "Black Wins")
+
+Game Rules:
+    1. The game is played on an 8x8 board with alternating dark and light squares
+    2. Each player starts with 12 pieces, placed on the dark squares of the three rows closest to them
+    3. Red moves first, then players alternate turns
+    4. Pieces move diagonally forward one square at a time
+    5. If a player's piece reaches the opposite end of the board, it becomes a "king" and can move backwards
+    6. Capturing is mandatory:
+       - If a piece can jump over an opponent's piece to an empty square, it must do so
+       - Multiple jumps are allowed in a single turn if possible
+       - The jumped (captured) pieces are removed from the board
+    7. The game ends when one player captures all of the opponent's pieces or when a player cannot make a legal move
+    8. win rules: if a player cannot make a legal move, the other player wins or if a player's pieces are all captured,
+     the other player wins.
+    9. a legal move is a move that is valid according to the rules of the game.
+
+Game Controls:
+    - Mouse click to select and move pieces
+    - Highlight legal moves when a piece is selected
+    - Option to restart the game at any time
+
+Game Features:
+    - Implement move validation to ensure only legal moves are allowed
+    - Highlight possible moves for the selected piece
+    - Automatic detection of available jumps and enforcing mandatory captures
+    - "King" pieces should be visually distinct from regular pieces
+    - Game state saving and loading functionalitxy
+    - Simple AI opponent (for single-player mod)
+    - player vs player mode and player vs ai mode
+
+User Interface:
+    - Clear, visually appealing board and piece design
+    - Animations for piece movement and captures
+    - Sound effects for moves, captures, and game events
+    - Display game rules and controls in an accessible menu
+    - quit button to exit the game
+
+Additional Features (for future updates):
+    - Multiple difficulty levels for AI
+    - Online multiplayer functionality
+    - Custom board and piece themes
+    - Replay system to review past games
+    - Tutorial mode for new players
