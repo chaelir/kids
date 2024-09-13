@@ -2,12 +2,16 @@ import pygame
 import random
 import sys
 import math
+import locale
 from arena import Arena
 from control_panel import ControlPanel
 from player import Player
 from zombie import Zombie
 from timer import Timer
 from score import Score
+from hp import HP  # Add this import at the top of the file
+import json
+import os
 
 class Game:
     def __init__(self):
@@ -26,47 +30,104 @@ class Game:
         self.control_panel = ControlPanel(self)
         self.player = Player(self)
         self.zombies = []
-        self.timer = Timer(self, 120)  # 2 minutes
+        self.timer = Timer(self, 30)  # Set timer to 30 seconds
         self.score = Score(self)
+        self.hp = HP(10)  # Add this line after self.score initialization
         
         self.game_over = False
         self.paused = False
+        self.waiting_to_start = True
+        self.start_message_font = pygame.font.Font(None, 48)
         
-        self.qwerty_enabled = False
+        self.qwerty_enabled = True  # Changed to True
         self.asdf_enabled = True
-        self.zxcv_enabled = False
+        self.zxcv_enabled = True  # Changed to True
 
         self.zombie_spawn_rate = 0.02  # 2% chance per frame
         self.max_zombies = 5  # Increased maximum number of zombies
 
-        print("Game initialized", file=sys.stderr)
+        self.base_zombie_speed = 0.25  # Reduced to 50% of the current speed
+        self.max_zombie_speed = 1.0  # Reduced to 100% of the current speed
+        self.current_speed_factor = 1.0  # Changed to 1.0 (default speed)
+        self.game_complete = False
+        self.game_success = False  # New attribute to track game success
+
+        print("Game initialized, waiting for start", file=sys.stderr)
+
+        self.high_scores = self.load_high_scores()
+
+        self.reset_to_start()
+
+    def reset_to_start(self):
+        self.waiting_to_start = True
+        self.game_over = False
+        self.game_complete = False
+        self.game_success = False
+        self.paused = False
+        self.zombies = []
+        self.score.reset()
+        self.hp.reset()
+        self.timer.reset()
+        self.current_speed_factor = 1.0  # Reset speed to default
+        self.control_panel.reset_speed_slider()  # Add this line
+        print("Game reset to start state", file=sys.stderr)
+
+    def load_high_scores(self):
+        try:
+            with open('high_scores.json', 'r') as f:
+                scores = json.load(f)
+                return sorted(scores, reverse=True)[:5]  # Ensure we have at most 5 scores, sorted
+        except (FileNotFoundError, json.JSONDecodeError):
+            return [0] * 5  # Initialize with five zero scores if file doesn't exist or is invalid
+
+    def save_high_scores(self):
+        with open('high_scores.json', 'w') as f:
+            json.dump(self.high_scores, f)
+
+    def update_high_scores(self, score):
+        self.high_scores.append(score)
+        self.high_scores.sort(reverse=True)
+        self.high_scores = self.high_scores[:5]  # Keep only top 5
+        self.save_high_scores()
 
     def run(self):
         print("Game started", file=sys.stderr)
-        while not self.game_over:
+        while True:  # Changed from 'while not self.game_over'
             self.handle_events()
-            if not self.paused:
-                self.update()
             self.draw()
+            if not self.waiting_to_start and not self.paused and not self.game_over and not self.game_complete:
+                self.update()
             self.clock.tick(60)
-        self.show_game_over_screen()
         pygame.quit()
         
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                self.game_over = True
+                pygame.quit()
+                sys.exit()
             elif event.type == pygame.KEYDOWN:
                 print(f"Key pressed: {pygame.key.name(event.key)}", file=sys.stderr)
-                if event.key == pygame.K_ESCAPE or event.key == pygame.K_SPACE:
+                if (self.game_over or self.game_complete) and event.key == pygame.K_RETURN:
+                    self.reset_to_start()
+                elif self.paused and event.key == pygame.K_RETURN:
+                    self.reset_to_start()
+                elif self.waiting_to_start and event.key == pygame.K_RETURN:
+                    self.start_game()
+                elif event.key == pygame.K_ESCAPE or event.key == pygame.K_SPACE:
                     self.toggle_pause()
-                elif not self.paused:  # Only handle other keys if not paused
+                elif not self.paused and not self.waiting_to_start and not self.game_over and not self.game_complete:
                     self.handle_keydown(event)
-            elif event.type == pygame.TEXTINPUT and not self.paused:
+            elif event.type == pygame.TEXTINPUT and not self.paused and not self.waiting_to_start and not self.game_over and not self.game_complete:
                 print(f"Text input: {event.text}", file=sys.stderr)
                 self.handle_text_input(event.text)
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                self.control_panel.handle_event(event)
+            
+            # Always process control panel events
+            self.control_panel.handle_event(event)
+
+    def start_game(self):
+        self.waiting_to_start = False
+        self.timer.start()
+        print("Game started", file=sys.stderr)
 
     def toggle_pause(self):
         self.paused = not self.paused
@@ -104,7 +165,7 @@ class Game:
         key_lower = key.lower()
         matching_zombies = [
             zombie for zombie in self.zombies
-            if zombie.letter.lower() == key_lower and not zombie.is_dying
+            if zombie.letter == key_lower and not zombie.is_dying
         ]
         
         if matching_zombies:
@@ -120,7 +181,9 @@ class Game:
     def update(self):
         self.timer.update()
         if self.timer.time_left <= 0:
+            self.game_success = True  # Player survived the timer
             self.game_over = True
+            return
 
         self.player.update()
         zombies_to_remove = []
@@ -130,8 +193,11 @@ class Game:
                 if zombie.bullet_hit():
                     zombies_to_remove.append(zombie)
             elif self.player.collides_with(zombie):
-                self.game_over = True
-                print("Game over: Player collided with a zombie!", file=sys.stderr)
+                self.hp.decrease()  # Decrease HP when a zombie reaches the player
+                zombies_to_remove.append(zombie)  # Remove the zombie after it deals damage
+                if self.hp.value <= 0:
+                    self.game_over = True
+                    print("Game over: Player HP reached 0!", file=sys.stderr)
 
         for zombie in zombies_to_remove:
             self.remove_zombie(zombie)
@@ -140,48 +206,54 @@ class Game:
 
     def draw(self):
         self.screen.fill((255, 255, 255))  # White background
-        pygame.draw.circle(self.screen, (255, 0, 0), (400, 300), 100, 3)  # Test circle
         self.arena.draw(self.screen)
-        self.player.draw(self.screen)  # This will draw both the player and the contours
+        self.player.draw(self.screen)
         for zombie in self.zombies:
             color = self.get_zombie_color(zombie)
             zombie.draw(self.screen, color)
         self.control_panel.draw(self.screen)
         self.timer.draw(self.screen)
-        self.draw_score()  # New method to draw the score
+        self.score.draw(self.screen)
+        self.hp.draw(self.screen, 10, 50)  # Draw HP below the timer
 
-        # Draw IME text
-        if self.ime_text:
-            font = pygame.font.Font(None, 36)
-            ime_surf = font.render(f"IME: {self.ime_text}", True, (0, 0, 0))
-            self.screen.blit(ime_surf, (10, self.height - 50))
-
-        # Draw pause overlay if the game is paused
-        if self.paused:
-            pause_overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-            pause_overlay.fill((0, 0, 0, 128))  # Semi-transparent black
-            self.screen.blit(pause_overlay, (0, 0))
-            
-            pause_font = pygame.font.Font(None, 72)
-            pause_text = pause_font.render("PAUSED", True, (255, 255, 255))
-            pause_rect = pause_text.get_rect(center=(self.width // 2, self.height // 2))
-            self.screen.blit(pause_text, pause_rect)
+        if self.waiting_to_start:
+            self.draw_start_message()
+        elif self.paused:
+            self.draw_pause_overlay()
+        elif self.game_over or self.game_complete:
+            self.draw_game_over_screen()
 
         pygame.display.flip()
 
-    def draw_score(self):
-        score_text = f"Score: {self.score.value}"
-        font = pygame.font.Font(None, 36)
-        text_surface = font.render(score_text, True, (0, 0, 0))
-        text_rect = text_surface.get_rect()
-        text_rect.topright = (self.width - 10, 10)  # Position in the top-right corner
-        self.screen.blit(text_surface, text_rect)
+    def draw_start_message(self):
+        start_text = self.start_message_font.render("Press ENTER to start", True, (0, 0, 0))
+        text_rect = start_text.get_rect(center=(self.width // 2, self.height // 2))
+        self.screen.blit(start_text, text_rect)
+
+    def draw_pause_overlay(self):
+        pause_overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        pause_overlay.fill((0, 0, 0, 128))  # Semi-transparent black
+        self.screen.blit(pause_overlay, (0, 0))
+        
+        pause_text = self.start_message_font.render("PAUSED", True, (255, 255, 255))
+        pause_rect = pause_text.get_rect(center=(self.width // 2, self.height // 2 - 60))
+        self.screen.blit(pause_text, pause_rect)
+
+        resume_text = self.font.render("Press SPACE to resume", True, (255, 255, 255))
+        resume_rect = resume_text.get_rect(center=(self.width // 2, self.height // 2))
+        self.screen.blit(resume_text, resume_rect)
+
+        return_text = self.font.render("Press ENTER to return to start", True, (255, 255, 255))
+        return_rect = return_text.get_rect(center=(self.width // 2, self.height // 2 + 40))
+        self.screen.blit(return_text, return_rect)
 
     def spawn_zombie(self):
         if len(self.zombies) < self.max_zombies and random.random() < self.zombie_spawn_rate:
             new_zombie = Zombie(self)
             spawn_x, spawn_y = self.generate_spawn_position()
             new_zombie.x, new_zombie.y = spawn_x, spawn_y
+            new_speed = self.base_zombie_speed + self.current_speed_factor * (self.max_zombie_speed - self.base_zombie_speed)
+            new_zombie.update_speed(new_speed)
             self.zombies.append(new_zombie)
             print(f"New zombie spawned with letter: {new_zombie.letter} at position ({spawn_x}, {spawn_y})", file=sys.stderr)
 
@@ -201,14 +273,53 @@ class Game:
             self.zxcv_enabled = not self.zxcv_enabled
         print(f"Keyboard sections enabled: QWERTY={self.qwerty_enabled}, ASDF={self.asdf_enabled}, ZXCV={self.zxcv_enabled}", file=sys.stderr)  # Debug print
 
-    def show_game_over_screen(self):
-        self.screen.fill((0, 0, 0))
-        game_over_text = self.font.render("Game Over", True, (255, 255, 255))
-        score_text = self.font.render(f"Final Score: {self.score.value}", True, (255, 255, 255))
-        self.screen.blit(game_over_text, (self.width // 2 - 100, self.height // 2 - 50))
-        self.screen.blit(score_text, (self.width // 2 - 100, self.height // 2 + 50))
-        pygame.display.flip()
-        pygame.time.wait(3000)  # Wait for 3 seconds before quitting
+    def draw_game_over_screen(self):
+        overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 128))  # Semi-transparent black
+        self.screen.blit(overlay, (0, 0))
+
+        if self.game_success:
+            main_text = self.font.render("Success!", True, (255, 255, 255))
+        else:
+            main_text = self.font.render("Game Over", True, (255, 255, 255))
+
+        final_score = self.calculate_final_score()
+        self.update_high_scores(final_score)
+        
+        score_text = self.font.render(f"Final Score: {final_score}", True, (255, 255, 255))
+        speed_text = self.font.render(f"Speed Factor: {self.current_speed_factor:.2f}", True, (255, 255, 255))
+        correct_types_text = self.font.render(f"Correct Types: {self.score.value}", True, (255, 255, 255))
+        hp_text = self.font.render(f"Remaining HP: {self.hp.value}", True, (255, 255, 255))
+        modes_text = self.font.render(f"Enabled Modes: {self.count_enabled_modes()}", True, (255, 255, 255))
+        restart_text = self.font.render("Press ENTER to return to start", True, (255, 255, 255))
+
+        y_offset = self.height // 2 - 200
+        for text in [main_text, score_text, speed_text, correct_types_text, hp_text, modes_text]:
+            text_rect = text.get_rect(center=(self.width // 2, y_offset))
+            self.screen.blit(text, text_rect)
+            y_offset += 40
+
+        # Display high scores
+        high_score_text = self.font.render("Top 5 High Scores:", True, (255, 255, 255))
+        self.screen.blit(high_score_text, (self.width // 2 - 100, y_offset))
+        y_offset += 40
+
+        for i, score in enumerate(self.high_scores, 1):
+            score_text = self.font.render(f"{i}. {score}", True, (255, 255, 255))
+            self.screen.blit(score_text, (self.width // 2 - 50, y_offset))
+            y_offset += 30
+
+        restart_rect = restart_text.get_rect(center=(self.width // 2, y_offset + 20))
+        self.screen.blit(restart_text, restart_rect)
+
+    def calculate_final_score(self):
+        if not self.game_success and self.hp.value <= 0:
+            return 0
+        base_score = int(self.current_speed_factor * (self.score.value + self.hp.value))
+        return base_score * self.count_enabled_modes()
+
+    def count_enabled_modes(self):
+        return sum([self.qwerty_enabled, self.asdf_enabled, self.zxcv_enabled])
 
     def get_zombie_color(self, zombie):
         if zombie.is_dying:
@@ -227,3 +338,11 @@ class Game:
         spawn_y = max(0, min(spawn_y, self.height - 100))
         
         return spawn_x, spawn_y
+
+    def update_zombie_speed(self, speed_factor):
+        if self.waiting_to_start:
+            self.current_speed_factor = speed_factor
+            new_speed = self.base_zombie_speed + speed_factor * (self.max_zombie_speed - self.base_zombie_speed)
+            for zombie in self.zombies:
+                zombie.update_speed(new_speed)
+            print(f"Updated zombie speed factor to {speed_factor:.2f}", file=sys.stderr)

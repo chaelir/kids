@@ -6,53 +6,63 @@ class SolutionPanel:
     def __init__(self, game):
         self.game = game
         self.formula = []
-        self.submit_button = pygame.Rect(50, 500, 100, 50)
-        self.clear_button = pygame.Rect(200, 500, 100, 50)
+        self.used_numbers = set()  # Track used card numbers
         self.formula_rects = []
         self.solution_text = ""
         self.solution_color = (0, 0, 0)  # Default black color
+        self.clear_solution_display()
 
     def add_to_formula(self, value):
+        if value.isdigit():
+            if value in self.used_numbers:
+                return False  # Number already used
+            self.used_numbers.add(value)
         self.formula.append(value)
+        return True
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if self.submit_button.collidepoint(event.pos):
-                self.evaluate_formula()
-            elif self.clear_button.collidepoint(event.pos):
-                self.clear_formula()
-            else:
-                for i, rect in enumerate(self.formula_rects):
-                    if rect.collidepoint(event.pos):
-                        self.remove_from_formula(i)
-                        break
+            for i, rect in enumerate(self.formula_rects):
+                if rect.collidepoint(event.pos):
+                    self.remove_from_formula(i)
+                    break
 
     def remove_from_formula(self, index):
         value = self.formula.pop(index)
         if value.isdigit():
+            self.used_numbers.remove(value)
             self.game.board.put_back_number(int(value))
 
     def reset_formula(self):
         self.formula = []
+        self.used_numbers.clear()
 
     def clear_formula(self):
         for value in self.formula:
             if value.isdigit():
                 self.game.board.put_back_number(int(value))
-        self.formula = []
+        self.reset_formula()
 
     def evaluate_formula(self):
         try:
+            if len(self.used_numbers) != 4:
+                raise ValueError("Not all cards are used")
+            
             formula_str = ''.join(self.formula)
             result = self.calculate_result(formula_str)
             if result == 24:  # Check for exact equality
                 self.game.start_flash((0, 255, 0))  # Green flash
+                self.game.display_message("Success! Correct solution.")
                 self.game.increment_solved_count()  # Increment the solved count
                 self.game.redraw_cards()
+                self.clear_solution_display()  # Clear solution display
             else:
                 self.game.start_flash((255, 0, 0))  # Red flash
-        except Exception:
+                self.game.display_message("Incorrect. Try again!")
+        except Exception as e:
+            print(f"Evaluation error: {e}")
             self.game.start_flash((255, 0, 0))  # Red flash
+            self.game.display_message("Invalid formula. Try again!")
 
     def calculate_result(self, formula):
         def factorial(n):
@@ -89,22 +99,14 @@ class SolutionPanel:
             self.formula_rects.append(text_rect)
             x += text_rect.width + 5
 
-        # Draw buttons
-        buttons = [
-            (self.submit_button, "Submit", (0, 255, 0)),
-            (self.clear_button, "Clear", (255, 0, 0))
-        ]
-        
-        for button, text, color in buttons:
-            pygame.draw.rect(screen, color, button)
-            text_surface = font.render(text, True, (0, 0, 0))
-            text_rect = text_surface.get_rect(center=button.center)
-            screen.blit(text_surface, text_rect)
-
-        # Draw solution text in green
+        # Draw solution text
         solution_surface = font.render(self.solution_text, True, self.solution_color)
         screen.blit(solution_surface, (50, 450))
 
     def display_solution(self, solution: str):
         self.solution_text = solution
         self.solution_color = (0, 255, 0)  # Green color for the solution
+
+    def clear_solution_display(self):
+        self.solution_text = ""
+        self.solution_color = (0, 0, 0)  # Reset to default black color

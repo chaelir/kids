@@ -24,11 +24,11 @@ class Board:
         if event.type == pygame.MOUSEBUTTONDOWN:
             for card in self.cards[:]:  # Iterate over a copy of the list
                 if card.rect.collidepoint(event.pos):
-                    self.game.solution_panel.add_to_formula(str(card.value))
-                    self.cards.remove(card)
+                    if self.game.solution_panel.add_to_formula(str(card.value)):
+                        self.cards.remove(card)
                     break
 
     def put_back_number(self, value):
         new_card = Card(value)
         self.cards.append(new_card)
-        self.position_cards()
+        self.position_cards()  # Reposition all cards to ensure proper layout

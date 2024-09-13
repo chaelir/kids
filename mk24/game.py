@@ -19,19 +19,27 @@ class Game:
         self.font = pygame.font.Font(None, 36)
         
         self.board = Board(self)
-        self.control_panel = ControlPanel(self)
         self.solution_panel = SolutionPanel(self)
         
         self.running = True
-        self.countdown = 120  # 2 minute countdown
+        self.is_timed_mode = False  # Start with timer disabled
+        self.countdown = 300  # 5 minutes (300 seconds)
         self.last_second = pygame.time.get_ticks()
         
         self.flash_start = 0
         self.flash_duration = 500  # 0.5 seconds
-        self.flash_color = (255, 255, 255)  # Default white
+        self.flash_color = None
+        self.message = ""
+        self.message_color = (255, 165, 0)  # Orange color for messages
+        self.message_timer = 0
 
         self.advanced_symbols_enabled = False
         self.solved_count = 0  # Initialize the solved count
+
+        self.control_panel = ControlPanel(self)
+        self.message = ""
+        self.message_color = (0, 0, 0)
+        self.message_timer = 0
 
     def run(self):
         while self.running:
@@ -45,35 +53,56 @@ class Game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
-            else:
+            elif event.type == pygame.MOUSEBUTTONDOWN:
                 self.board.handle_event(event)
                 self.control_panel.handle_event(event)
                 self.solution_panel.handle_event(event)
 
     def update(self):
-        current_time = pygame.time.get_ticks()
-        if current_time - self.last_second >= 1000:
-            self.countdown -= 1
-            self.last_second = current_time
-            if self.countdown <= 0:
-                self.running = False
+        if self.is_timed_mode:
+            current_time = pygame.time.get_ticks()
+            if current_time - self.last_second >= 1000:
+                self.countdown -= 1
+                self.last_second = current_time
+                if self.countdown <= 0:
+                    self.running = False
+        
+        # Update flash
+        if self.flash_color and pygame.time.get_ticks() - self.flash_start > self.flash_duration:
+            self.flash_color = None
+        
+        # Update message timer
+        if self.message_timer > 0:
+            self.message_timer -= 1
+            if self.message_timer == 0:
+                self.message = ""
 
     def draw(self):
-        if self.is_flashing():
+        if self.flash_color:
             self.screen.fill(self.flash_color)
         else:
-            self.screen.fill((255, 255, 255))  # Normal white background
+            self.screen.fill((255, 255, 255))  # White background
         
         self.board.draw(self.screen)
         self.control_panel.draw(self.screen)
         self.solution_panel.draw(self.screen)
         
-        timer_text = self.font.render(f"Time: {self.countdown}", True, (0, 0, 0))
+        if self.is_timed_mode:
+            minutes, seconds = divmod(self.countdown, 60)
+            timer_text = self.font.render(f"Time: {minutes:02d}:{seconds:02d}", True, (0, 0, 0))
+        else:
+            timer_text = self.font.render("Time: --:--", True, (0, 0, 0))
         self.screen.blit(timer_text, (10, 10))
         
         # Add solved count display
         solved_text = self.font.render(f"Solved: {self.solved_count}", True, (0, 0, 0))
         self.screen.blit(solved_text, (self.width - 150, 10))
+        
+        # Draw message if it exists
+        if self.message and self.message_timer > 0:
+            message_surface = self.font.render(self.message, True, self.message_color)
+            message_rect = message_surface.get_rect(center=(self.width // 2, 50))
+            self.screen.blit(message_surface, message_rect)
         
         pygame.display.flip()
 
@@ -86,10 +115,11 @@ class Game:
     def redraw_cards(self):
         self.board.generate_cards()
         self.solution_panel.reset_formula()
+        self.solution_panel.clear_solution_display()
 
     def start_flash(self, color):
-        self.flash_start = pygame.time.get_ticks()
         self.flash_color = color
+        self.flash_start = pygame.time.get_ticks()
 
     def is_flashing(self):
         return pygame.time.get_ticks() - self.flash_start < self.flash_duration
@@ -97,6 +127,14 @@ class Game:
     def toggle_advanced_symbols(self):
         self.advanced_symbols_enabled = not self.advanced_symbols_enabled
         self.control_panel.update_symbols(self.advanced_symbols_enabled)
+        print(f"Advanced symbols {'enabled' if self.advanced_symbols_enabled else 'disabled'}")
+
+    def toggle_game_mode(self):
+        self.is_timed_mode = not self.is_timed_mode
+        if self.is_timed_mode:
+            self.countdown = 300  # Reset timer to 5 minutes when enabling
+            self.last_second = pygame.time.get_ticks()
+        print(f"Timer mode: {'ON' if self.is_timed_mode else 'OFF'}")
 
     def reveal_solution(self) -> str:
         cards = [card.value for card in self.board.cards]
@@ -201,3 +239,8 @@ class Game:
 
     def increment_solved_count(self):
         self.solved_count += 1
+
+    def display_message(self, message):
+        self.message = message
+        self.message_color = (255, 165, 0)  # Orange color
+        self.message_timer = 180  # Display for 3 seconds (60 frames per second)
