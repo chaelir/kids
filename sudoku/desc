@@ -1,0 +1,48 @@
+Project Objective:
+    Develop a classic Sudoku game
+
+Project Framework:
+    - pygame
+
+Game Layout:
+    - Main game board: 9x9 grid divided into 9 3x3 sub-grids
+    - Number selection panel: buttons for numbers 1-9
+    - Control buttons: New Game, Undo, Hint, Check, Solve
+    - Difficulty selector: Easy, Medium, Hard, Expert
+    - Timer: displays elapsed time
+    - Score display
+
+Game Controls/Rules:
+    1. The game starts with a partially filled 9x9 grid
+    2. Player selects an empty cell and then chooses a number from 1-9
+    3. Each row, column, and 3x3 sub-grid must contain numbers 1-9 without repetition
+    4. New Game button starts a new puzzle with selected difficulty
+    5. Undo button removes the last entered number
+    6. Hint button fills in one correct cell
+    7. Check button validates the current board state
+    8. Solve button completes the puzzle (for learning purposes)
+    9. Timer starts when the game begins and stops when the puzzle is solved
+    10. Score is calculated based on difficulty and time taken
+
+Game Features:
+    - Multiple difficulty levels affecting the number of pre-filled cells
+    - Option to highlight conflicts (same number in row, column, or sub-grid)
+    - Save and resume game progress
+    - Statistics tracking (games played, win rate, best times)
+
+User Interface:
+    - Clean, minimalist design with high contrast for easy reading
+    - Color-coded feedback (green for correct entries, red for conflicts)
+    - Optional night mode for reduced eye strain
+    - Haptic feedback for button presses and number entries
+
+Game Algorithms:
+    1. Implement a backtracking algorithm for puzzle generation and solving
+    2. Use constraint propagation for providing hints and checking validity
+    3. Implement a difficulty rating system based on required solving techniques
+
+Additional Features (for future updates):
+    - Leaderboards and achievements
+    - Custom themes
+    - Pencil marks for noting possible numbers in a cell
+    - Tutorial mode for beginners
