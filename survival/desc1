@@ -25,5 +25,3 @@ Food and water levels decrease by 1 unit every second.
 Health decreases by 1 unit every second, but only if either food or water is at 0.
 tree branches(20)
 hazard 1(10)
-      survival_game.py
-a simple game based on game.py but with no hazards and and no health packs
