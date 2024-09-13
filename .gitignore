@@ -9,4 +9,8 @@ t2kz/__pycache__/control_panel.cpython-312.pyc
 t2kz/__pycache__/game.cpython-312.pyc
 t2kz/__pycache__/player.cpython-312.pyc
 t2kz/__pycache__/zombie.cpython-312.pyc
+ezm/__pycache__/maze.cpython-312.pyc
+
+# Ignore high_scores
+ezm/leaderboard.json
 t2kz/high_scores.json
